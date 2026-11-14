@@ -2,6 +2,8 @@
 
 Game chiến thuật 3D theo lượt, chạy cổng 3010. Bản này có cây 45 công nghệ không khóa loại trừ, 23 loại quân, công trình/cải tạo lãnh thổ và hoạt ảnh hành động nhẹ. Bản đồ, sương mù, thiết lập Dễ/Vừa/Khó và 1–3 AI tiếp tục được giữ.
 
+Cập nhật đang phát triển sau 0.7.0: [bước 1 — Nhịp khai cuộc và AI khám phá](19-step1-pace-and-exploration.md). Map mới có làng/hành lang trung tâm; muốn dùng bố trí mới hãy bắt đầu ván mới. AI dùng đường hợp lệ với số bước của từng quân và trinh sát ưu tiên khám phá thay vì phá tường. UI tốc độ nhanh chưa ghép.
+
 ## Vào chơi
 
 Chưa có ván lưu: chọn độ khó, số AI và mã bản đồ. Có ván lưu: tiếp tục ngay. Menu → Ván mới để đổi cấu hình; chỉ thay ván khi bấm Bắt đầu. Bản 0.7.0 bắt đầu ván mới, không chuyển schema cũ. Điều kiện và giao diện hiện hành xem [16](16-technology-audit-and-ui.md).

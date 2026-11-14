@@ -1,7 +1,8 @@
+import {explorationRoutes,explorationPath,visiblePathDestination} from './exploration';
 import { DIFFICULTIES } from '../game/map';
-import { observe, isVisible, sightRange } from '../game/visibility';
+import { observe, isVisible } from '../game/visibility';
 import { TECHNOLOGIES, type TechnologyId } from '../data/technologies';
-import { BUILDINGS, UNITS, cargo, cargoUsed, isShip, isSiege, movementCost, improvementReason, buildingReason, hasTech, hasBuilding, recruitReason, income, researchReason, distance, execute, previewAttack, reachable, recruitTiles, tileAt, type Command, type State, type UnitType } from '../game/engine';
+import { BUILDINGS, UNITS, cargo, cargoUsed, isShip, isSiege, improvementReason, buildingReason, hasTech, hasBuilding, recruitReason, income, researchReason, distance, execute, previewAttack, reachable, recruitTiles, tileAt, type Command, type State, type UnitType } from '../game/engine';
 export function nextAICommand(raw:State):Command{
  if(raw.turn==='player'||raw.winner)return {type:'end'};
  return plan(observe(raw,raw.turn));
@@ -18,7 +19,8 @@ function plan(s:State):Command{
    for(const t of choices){const c:Command={type:'land',unit:u.id,to:t.id};if(legal(c))return c;}return {type:'wait',unit:u.id};
   }
   if(u.type==='paladin'||u.type==='engineer')for(const id of [...own.filter(e=>e.hp<UNITS[e.type].hp).map(e=>e.tile),...cities.filter(c=>c.fort<20).map(c=>c.tile)]){const c:Command={type:'support',unit:u.id,to:id};if(legal(c))return c;}
-  const attacks=[...new Set(targets)].map(id=>({id,p:previewAttack(s,u,id)})).filter(a=>a.p.legal).sort((a,b)=>(Number(b.p.capture)*100+b.p.damage+b.p.fortDamage-b.p.retaliation)-(Number(a.p.capture)*100+a.p.damage+a.p.fortDamage-a.p.retaliation));
+  const scouting=u.type==='scout'||u.type==='scout_ship';
+  const attacks=[...new Set(targets)].map(id=>({id,p:previewAttack(s,u,id)})).filter(a=>a.p.legal&&(!scouting||a.p.capture||a.p.defenderHP===0&&a.p.retaliation===0)).sort((a,b)=>(Number(b.p.capture)*100+b.p.damage+b.p.fortDamage-b.p.retaliation)-(Number(a.p.capture)*100+a.p.damage+a.p.fortDamage-a.p.retaliation));
   if(attacks.length){
    if(u.type==='crossbow'&&hasTech(s,owner,'marksman')&&!u.moved&&u.stance!=='aim')return {type:'stance',unit:u.id,stance:'aim'};
    return {type:'attack',unit:u.id,to:attacks[0].id};
@@ -36,11 +38,12 @@ function plan(s:State):Command{
    if(s.cities.some(c=>c.owner!==owner&&distance(tileAt(s,c.tile),tileAt(s,u.tile))>3)&&cargo(s,u).length<2){const cmd:Command={type:'board',unit:p.id,ship:u.id};if(legal(cmd))return cmd;}
   }
   if(u.moves<=0)return {type:'wait',unit:u.id};
-  const routes=reachable(s,u,Infinity,true),goals=[...routes].filter(([,r])=>r.path.length).map(([id,route])=>({id,route,target:targets.find(target=>distance(tileAt(s,id),tileAt(s,target))<=UNITS[u.type].range)})).filter(g=>g.target);
-  goals.sort((a,b)=>a.route.cost-b.route.cost);
-  let path=goals[0]?.route.path;
-  if(!path){const unseen=s.tiles.filter(t=>t.terrain==='unknown'),frontier=[...routes].filter(([,r])=>r.path.length).map(([id,route])=>({route,gain:unseen.filter(t=>distance(t,tileAt(s,id))<=sightRange(u)).length})).filter(f=>f.gain>0);frontier.sort((a,b)=>a.route.cost/a.gain-b.route.cost/b.gain);path=frontier[0]?.route.path;}
-  if(path){let spent=0,to=u.tile;for(const id of path){spent+=movementCost(s,u,tileAt(s,id));if(spent>u.moves||!isVisible(s,owner,id))break;to=id;}if(to!==u.tile)return {type:'move',unit:u.id,to};}
+  // Scouts capture empty villages and survey; they do not get stuck chipping walls.
+  const movementTargets=scouting?s.cities.filter(c=>c.owner!==owner&&c.fort===0&&!s.units.some(e=>!e.aboard&&e.tile===c.tile&&e.owner!==owner)).map(c=>c.tile):targets;
+  const routes=explorationRoutes(s,u),goals=[...routes].filter(([,r])=>r.path.length).map(([id,route])=>({id,route,target:movementTargets.find(target=>distance(tileAt(s,id),tileAt(s,target))<=UNITS[u.type].range)})).filter(g=>g.target&&(!scouting||g.route.cost<=u.moves));
+  goals.sort((a,b)=>a.route.cost-b.route.cost||distance(tileAt(s,a.id),{q:0,r:0})-distance(tileAt(s,b.id),{q:0,r:0}));
+  const path=goals[0]?.route.path??explorationPath(s,u,routes);
+  if(path){const to=visiblePathDestination(s,u,path);if(to)return {type:'move',unit:u.id,to};}
   if(u.type==='shield')return {type:'stance',unit:u.id,stance:'guard'};
   if(u.type==='pikeman')return {type:'stance',unit:u.id,stance:'brace'};
   return {type:'wait',unit:u.id};

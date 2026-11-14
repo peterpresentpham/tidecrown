@@ -32,8 +32,8 @@ Toàn cây mở được **không có nghĩa phải học hết 45 nút mới th
 - **Đã có trong code:** toàn bộ vòng lệnh cơ bản, công thành, kinh tế/xây dựng, 45 công nghệ, 23 đơn vị, kỹ năng đơn vị, hoạt ảnh nhẹ, tàu/vận tải, fog, bản đồ ngẫu nhiên, thiết lập ván, lưu và thắng/thua.
 - **Cây công nghệ/UI vừa yêu cầu:** đã làm xong ở mức chức năng; không mở một đợt thiết kế lại nữa nếu không có lỗi cụ thể.
 - **Chưa nghiệm thu chất lượng trận:** gặp địch đủ sớm, AI phối hợp, vai trò quân xuất hiện trong ván thật, cân bằng và thời gian chờ.
-- **Mốc kiểm tra ngày 14/11:** 82/82 kiểm thử tự động đạt. Đây là bằng chứng luật đang được kiểm tra, không phải bằng chứng AI hay hoặc game đã cân bằng.
-- **Đợt AI/nhịp trận mới:** chưa triển khai khi người dùng yêu cầu dừng để lập lại kế hoạch. Bước kế tiếp sau kế hoạch là bước 1.
+- **Mốc kiểm tra ngày 14/11:** 91/91 kiểm thử tự động đạt sau phần Codex bước 1 (mốc kiểm kê trước đó: 82). Đây là bằng chứng luật đang được kiểm tra, không phải bằng chứng AI hay hoặc game đã cân bằng.
+- **Cập nhật bước 1:** đã triển khai phần map/AI khám phá, trung vị gặp địch Vừa/1 AI ở lượt 6, 30/30 seed gặp trước/hết lượt 14. Chi tiết và giới hạn ở [19](19-step1-pace-and-exploration.md). Phần UI phát lượt nhanh chờ Claude và đo sau ghép.
 
 ## 4. Sáu bước còn lại, làm theo thứ tự
 
@@ -131,7 +131,7 @@ Riêng khả năng đi biển, chở quân và đổ bộ **thuộc 1.0**, vì �
 | Mốc | Trạng thái khi lập kế hoạch |
 | --- | --- |
 | 0. Rà code, yêu cầu và chốt phạm vi/tài liệu | Đã thực hiện ngày 14/11/2026 |
-| 1. Nhịp khai cuộc và thời gian chờ | Chưa triển khai đợt mới |
+| 1. Nhịp khai cuộc và thời gian chờ | Đạt phần Codex: map/AI khám phá/bộ đo; chờ UI nhanh của Claude và benchmark sau ghép, xem 19 |
 | 2. AI phối hợp trên bộ | Chưa đạt; đang có AI cơ bản |
 | 3. Nội dung hiện có và hải quân dùng thực tế | Một phần đã có; còn bản đồ nước và AI vận tải |
 | 4. Cân bằng ván hoàn chỉnh | Chưa có bộ playtest nghiệm thu |

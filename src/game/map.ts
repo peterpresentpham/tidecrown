@@ -20,10 +20,14 @@ const names=['Đồng Cỏ','Thành Cổ','Bắc Lâm','Nam Hải','Trúc Sơn',
 export function generateMap(settings:GameSettings,factions:FactionId[]):{tiles:Tile[];cities:City[];starts:string[]}{
   const rng=randomSource(settings.seed),pick=(n:number)=>Math.floor(rng()*n);
   const flipQ=rng()<.5?-1:1,flipR=rng()<.5?-1:1;
-  const anchors=settings.aiCount===1?[[-9,5],[9,-5]]:settings.aiCount===2?[[-10,5],[10,5],[0,-7]]:[[-9,6],[9,-6],[9,6],[-9,-6]];
-  const capitals=anchors.map(([q,r])=>({q:(q+pick(3)-1)*flipQ,r:(r+pick(3)-1)*flipR}));
-  const nearby=capitals.map(p=>({q:p.q+(p.q<0?4:p.q>0?-4:0),r:p.r+(p.q===0?4:0)}));
-  const positions=[...capitals,...nearby];
+  // Shared jitter preserves equal safe openings. The center village creates a
+  // contested inland route; the rest of the 825-cell map remains open to flanking.
+  const offset={q:pick(3)-1,r:pick(3)-1};
+  const anchors=settings.aiCount===1?[[-10,3],[10,-3]]:settings.aiCount===2?[[-8,5],[8,5],[0,-8]]:[[-8,6],[8,-6],[8,6],[-8,-6]];
+  const transform=(q:number,r:number)=>({q:(q+offset.q)*flipQ,r:(r+offset.r)*flipR});
+  const capitals=anchors.map(([q,r])=>transform(q,r));
+  const nearby=anchors.map(([q,r])=>Math.abs(q)>=Math.abs(r)?transform(q-Math.sign(q)*4,r):transform(q,r-Math.sign(r)*4));
+  const center=transform(0,0),positions=[...capitals,...nearby,center];
   for(let attempts=0;positions.length<factions.length*3+3&&attempts<3000;attempts++){
     const p={q:pick(23)-11,r:pick(17)-8};
     if(positions.every(other=>distance(p,other)>=4))positions.push(p);
@@ -46,7 +50,7 @@ export function generateMap(settings:GameSettings,factions:FactionId[]):{tiles:T
   // Nearest-neighbor spanning tree ensures no village or starting army is stranded.
   const connected=[positions[0]],pending=positions.slice(1);
   while(pending.length){let best=Infinity,from=connected[0],to=0;for(const a of connected)pending.forEach((b,i)=>{const d=distance(a,b);if(d<best){best=d;from=a;to=i;}});road(from,pending[to]);connected.push(pending.splice(to,1)[0]);}
-  capitals.forEach((p,i)=>road(p,nearby[i]));positions.forEach(p=>clear(p,1));
+  capitals.forEach((p,i)=>{road(p,nearby[i]);road(nearby[i],center);});positions.forEach(p=>clear(p,1));
   for(const t of tiles)if(t.terrain==='grass'&&[[1,0],[-1,0],[0,1],[0,-1]].some(([q,r])=>index.get(`${t.q+q},${t.r+r}`)?.terrain==='water'))t.terrain='sand';
   const starts=capitals.map((p,i)=>key({q:p.q+Math.sign(nearby[i].q-p.q),r:p.r+Math.sign(nearby[i].r-p.r)}));
   return {tiles,cities,starts};

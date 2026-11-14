@@ -46,6 +46,8 @@ Quân **xanh lam, phù hiệu BẠN** là quân của mình, được chọn s�
 | [15 — Công nghệ, đơn vị và hoạt ảnh](docs/15-implemented-technology-and-animation.md) | Phạm vi chạy 0.6.0, hành động, giá, lưu ván và tối ưu đồ họa |
 | [16 — Rà soát công nghệ và giao diện](docs/16-technology-audit-and-ui.md) | Điều kiện hiện hành, nguồn tham khảo, trạng thái sáng và schema 7 |
 | [17 — Kiểm kê hiện trạng](docs/17-implementation-audit.md) | Đối chiếu yêu cầu/code, phần đã có và chưa nghiệm thu |
+| [18 — Giao việc Claude](docs/18-claude-ui-performance-handoff.md) | Ranh giới UI/render, phát lượt nhanh và bàn giao worktree |
+| [19 — Bước 1: nhịp trận và khám phá](docs/19-step1-pace-and-exploration.md) | Kết quả đo trước/sau, AI khám phá và trạng thái nghiệm thu |
 
 Bản 0.7.0 dùng luật và schema mới: bắt đầu ván mới, không chuyển ván 0.6.x.
 
@@ -55,4 +57,4 @@ Bản 0.7.0 dùng luật và schema mới: bắt đầu ván mới, không chuy�
 
 [17 — Kiểm kê](docs/17-implementation-audit.md) ghi rõ code đang có và việc chưa được kiểm chứng. **08, 03, 14 và 16** mô tả cách chơi/công nghệ/quân hiện tại. Các ý tưởng cũ như tiếp viện, phong tỏa và ba mục tiêu không thuộc điều kiện hoàn thành 1.0. Khi có khác biệt, yêu cầu mới nhất trong chat được ưu tiên.
 
-Mốc kiểm kê 14/11/2026: 82/82 kiểm thử đạt; vòng chơi và nội dung cơ bản đã có, chưa nghiệm thu chất lượng AI, cân bằng và hiệu năng theo kế hoạch mới. Bước AI/nhịp trận mới chưa triển khai trước khi người dùng yêu cầu rà lại kế hoạch.
+Mốc kiểm kê ban đầu 14/11/2026 có 82 kiểm thử; sau phần Codex bước 1 có 91/91 kiểm thử đạt; vòng chơi và nội dung cơ bản đã có, chưa nghiệm thu chất lượng AI, cân bằng và hiệu năng theo kế hoạch mới. Phần Codex của bước 1 đã triển khai: 30/30 seed Vừa/1 AI gặp quân địch trước/hết lượt 14, trung vị lượt 6. Đối chứng đứng yên trung vị giảm từ 13 xuống 11; chưa bảo đảm mọi seed. Còn chờ UI phát lượt nhanh của Claude để nghiệm thu thời gian cả vòng AI. Xem báo cáo 19.

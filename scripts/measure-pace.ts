@@ -1,0 +1,14 @@
+import {writeFileSync,mkdirSync} from 'node:fs';
+import {dirname} from 'node:path';
+import {cpus,platform,release} from 'node:os';
+import {paceCampaign} from '../tests/helpers/paceCampaign';
+const arg=(key:string,fallback:string)=>process.argv.includes(key)?process.argv[process.argv.indexOf(key)+1]:fallback;
+const count=Number(arg('--seeds','30')),aiCount=Number(arg('--ai-count','1')) as 1|2|3,maxRound=Number(arg('--rounds','20')),prefix=arg('--prefix','pace-');
+if(!Number.isInteger(count)||count<1||count>100||![1,2,3].includes(aiCount)||!Number.isInteger(maxRound)||maxRound<1||maxRound>60)throw new Error('Invalid benchmark arguments');
+const policy=arg('--player','inward') as 'inward'|'idle';if(!['inward','idle'].includes(policy))throw new Error('Invalid player policy');
+const rows=[];for(let i=0;i<count;i++)rows.push(paceCampaign(`${prefix}${String(i).padStart(2,'0')}`,aiCount,maxRound,policy));
+const contacts=rows.map(r=>r.firstContact??Infinity).sort((a,b)=>a-b);
+const rawMedian=contacts.length%2?contacts[(contacts.length-1)/2]:(contacts[contacts.length/2-1]+contacts[contacts.length/2])/2;
+const median=Number.isFinite(rawMedian)?rawMedian:null;
+const report={environment:{node:process.version,platform:platform(),release:release(),cpu:cpus()[0]?.model},parameters:{count,aiCount,maxRound,policy:policy==='idle'?'idle-control-v1':'fixed-inward-opening-v1'},summary:{medianContact:median,contactsBy14:rows.filter(r=>r.firstContact!==null&&r.firstContact<=14).length,noContact:rows.filter(r=>r.firstContact===null).length,initialContact:rows.filter(r=>r.initialContact!==null).length,firstVillageBy2:rows.filter(r=>r.firstVillage!==null&&r.firstVillage<=2).length,combatBy20:rows.filter(r=>r.firstCombat!==null&&r.firstCombat<=20).length,aiCommands:rows.reduce((n,r)=>n+r.aiCommands,0),decisionMs:+rows.reduce((n,r)=>n+r.decisionMs,0).toFixed(2),maxDecisionMs:Math.max(...rows.map(r=>r.maxDecisionMs))},rows};
+const output=arg('--output',`artifacts/pace-${aiCount}ai.json`);mkdirSync(dirname(output),{recursive:true});writeFileSync(output,JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({output,...report.summary}));
