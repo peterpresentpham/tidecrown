@@ -1,0 +1,66 @@
+import type { Resource } from '../game/engine';
+export const BRANCHES={economy:'Lương thực & hạ tầng',materials:'Tài nguyên & luyện kim',infantry:'Bộ binh',ranged:'Cung & nỏ',cavalry:'Trinh sát & kỵ binh',siege:'Công trình & công thành',naval:'Hàng hải'} as const;
+export type Branch=keyof typeof BRANCHES;
+// Audited dependency graph (docs/16): prerequisite knowledge, not unrelated unit unlocks. All requirements are AND; all branches remain researchable.
+const rows=[
+ ['basic_agriculture','E1','Nông nghiệp','economy',1,[],'Mở ruộng trong lãnh thổ và nông trại tại thành.'],
+ ['granary','E2','Kho lương','economy',2,['basic_agriculture'],'Mở kho lương: giảm 1 lương duy trì thành, +1 lương/lượt.'],
+ ['advanced_agriculture','E3','Thâm canh','economy',3,['basic_agriculture'],'Nâng ruộng thâm canh; giảm 20% lương nâng thành.'],
+ ['irrigation','E4','Thủy lợi','economy',4,['advanced_agriculture','engineering'],'Nâng mạng tưới; ruộng tưới được thưởng theo ruộng kề, tối đa +3 lương/ô.'],
+ ['husbandry','E5','Chăn nuôi','economy',2,['basic_agriculture'],'Mở đồng cỏ trên đồng bằng: +3 lương/ô.'],
+ ['horses','E6','Thuần dưỡng ngựa','economy',2,['husbandry'],'Mở chuồng ngựa để tuyển kỵ binh.'],
+ ['commerce','E7','Thương mại','economy',2,[],'Mở chợ: +4 vàng và thưởng theo thành nối đường, tối đa +4.'],
+ ['roads','E8','Đường bộ','economy',2,['stoneworking'],'Xây đường trong lãnh thổ; đi đường tốn 0.5 bước/ô, nối chợ.'],
+ ['basic_woodworking','M1','Chế biến gỗ','materials',1,[],'+1 gỗ/làng/lượt; mở xưởng gỗ và ô khai thác rừng.'],
+ ['forestry','M2','Quản lý rừng','materials',2,['basic_woodworking'],'Trồng rừng; mỗi ô khai thác rừng +1 gỗ.'],
+ ['advanced_woodworking','M3','Mộc cao cấp','materials',3,['basic_woodworking'],'Mở xưởng cơ khí: +2 gỗ; nền chế tạo nỏ, máy và tàu lớn.'],
+ ['mining','M4','Khai khoáng','materials',1,[],'Xây mỏ trên đồi: +3 đá/ô.'],
+ ['stoneworking','M5','Chế tác đá','materials',2,['mining'],'Nâng mỏ thành mỏ đá +5 đá/ô; mở hướng tường và đường.'],
+ ['basic_metalworking','M6','Luyện kim','materials',2,['mining'],'Mở lò rèn; điều kiện chế tạo giáo và vũ khí kim loại.'],
+ ['ironworking','M7','Rèn sắt','materials',3,['basic_metalworking'],'Nâng lò rèn sắt; nền trang bị kiếm binh và kỵ sĩ.'],
+ ['steel','M8','Luyện thép','materials',4,['ironworking'],'Mở xưởng thép để tuyển quân giáp nặng.'],
+ ['shields','I1','Khiên trận','infantry',2,['basic_woodworking'],'Mở lính khiên và hành động Giữ trận chống đạn.'],
+ ['spearmen','I2','Giáo binh','infantry',2,['basic_metalworking'],'Mở lính giáo chống kỵ binh.'],
+ ['swords','I3','Kiếm thuật','infantry',3,['ironworking'],'Mở kiếm binh có lợi khi đánh bộ binh.'],
+ ['pikes','I4','Thương dài','infantry',3,['spearmen','basic_woodworking'],'Mở thương binh và Dựng thương chặn xung phong.'],
+ ['heavy_infantry','I5','Bộ binh giáp nặng','infantry',4,['swords','steel'],'Mở bộ binh giáp nặng giữ tuyến.'],
+ ['archery','R1','Cung thuật','ranged',2,['basic_woodworking'],'Mở cung thủ tầm 2 ô.'],
+ ['rangers','R2','Kiểm lâm','ranged',3,['archery','recon'],'Mở kiểm lâm đi rừng nhanh, bắn rồi dùng bước còn lại để rút.'],
+ ['crossbows','R3','Chế tạo nỏ','ranged',3,['advanced_woodworking','basic_metalworking'],'Mở lính nỏ xuyên 2 giáp, cần xưởng cơ khí.'],
+ ['marksman','R4','Xạ kích chính xác','ranged',4,['crossbows'],'Lính nỏ được Ngắm bắn: bỏ bước đi để xuyên thêm 2 giáp.'],
+ ['recon','C1','Trinh sát','cavalry',1,[],'Mở trinh sát bộ: 3 bước, tầm nhìn 4 ô.'],
+ ['light_cavalry','C2','Kỵ binh nhẹ','cavalry',2,['horses'],'Mở kỵ nhẹ vòng sườn; cần chuồng ngựa.'],
+ ['mounted_archery','C3','Kỵ xạ','cavalry',3,['light_cavalry','archery'],'Mở cung kỵ: bắn rồi rút bằng bước còn lại.'],
+ ['knights','C4','Kỵ sĩ','cavalry',3,['light_cavalry','ironworking'],'Mở kỵ sĩ xung phong khi chạy đủ 2 ô đất trống.'],
+ ['heavy_cavalry','C5','Thiết kỵ','cavalry',4,['knights','steel'],'Mở thiết kỵ xung phong mạnh, tốn nhiều lương.'],
+ ['paladins','C6','Con đường Paladin','cavalry',4,['heavy_cavalry'],'Mở Paladin; dùng hành động và 3 lương để cứu chữa đồng minh.'],
+ ['siege','S1','Kỹ thuật công thành','siege',3,['advanced_woodworking','basic_metalworking'],'Mở xưởng công thành để chế tạo máy.'],
+ ['ballistas','S2','Ballista','siege',3,['siege','crossbows'],'Mở máy bắn tên chống giáp, yếu khi phá tường.'],
+ ['catapults','S3','Máy bắn đá','siege',3,['siege'],'Mở catapult phá 6 công sự/đòn.'],
+ ['siege_logistics','S4','Hậu cần vây hãm','siege',4,['siege','roads'],'Máy được triển khai: bỏ lượt chuẩn bị để tăng tầm bắn; thu máy trước khi đi.'],
+ ['trebuchets','S5','Trebuchet','siege',4,['catapults','siege_logistics'],'Mở máy đối trọng tầm 4, phải triển khai trước khi bắn.'],
+ ['walls','S6','Tường thành','siege',2,['stoneworking'],'Xây tường độc lập cấp kinh tế: tối đa công sự +20.'],
+ ['towers','S7','Tháp canh','siege',3,['walls','archery'],'Tháp có tầm nhìn 3; tự bắn một địch đang thấy ở đầu lượt, tốn 1 vàng duy trì.'],
+ ['engineering','S8','Công binh','siege',3,['roads','advanced_woodworking'],'Mở công binh sửa máy/thành, làm cầu qua đoạn nước hẹp.'],
+ ['naval','N1','Hàng hải','naval',2,['basic_woodworking'],'Mở cảng và thuyền trinh sát ven bờ.'],
+ ['transports','N2','Tàu vận tải','naval',2,['naval'],'Mở tàu chở quân với 6 chỗ; quân nặng tốn nhiều chỗ.'],
+ ['sailing','N3','Buồm và đóng tàu','naval',3,['naval','advanced_woodworking'],'Tàu được đi xa bờ; mở xưởng đóng tàu lớn.'],
+ ['warships','N4','Chiến hạm','naval',3,['sailing','archery'],'Mở chiến hạm tầm 2, hộ tống vận tải và ép bờ.'],
+ ['heavy_warships','N5','Chiến hạm hạng nặng','naval',4,['warships','ballistas'],'Mở chiến hạm ballista tầm 3, xuyên giáp tốt.'],
+ ['amphibious','N6','Chiến thuật đổ bộ','naval',4,['transports'],'Đổ bộ không chịu -1 giáp trong lượt phòng thủ; vẫn dùng hết hành động.'],
+] as const;
+export type TechnologyId=typeof rows[number][0];
+export type Technology={id:TechnologyId;code:string;name:string;branch:Branch;tier:number;requires:TechnologyId[];cost:Resource;turns:number;effect:string};
+export const TECHNOLOGIES=Object.fromEntries(rows.map(([id,code,name,branch,tier,requires,effect])=>[id,{id,code,name,branch,tier,requires:[...requires],cost:{gold:[0,5,12,24,40][tier],food:0,wood:tier>=3&&['siege','naval'].includes(branch)?8:0,stone:tier===4&&branch==='siege'?5:0},turns:tier===1?1:tier===4?3:2,effect}])) as Record<TechnologyId,Technology>;
+export { UNIT_TECH, RECRUITABLE_UNITS } from './units';
+
+/** Explain the reason for every dependency; roots have no prerequisite. */
+export const TECHNOLOGY_LOGIC:Record<TechnologyId,string>={
+ basic_agriculture:'Nền trồng trọt, có thể học ngay từ đầu.',granary:'Trồng trọt tạo ra lương thực cần bảo quản.',advanced_agriculture:'Phát triển kỹ thuật canh tác từ nông nghiệp; không cần học kho lương trước.',irrigation:'Canh tác thâm canh kết hợp kỹ thuật công trình để xây mạng tưới.',husbandry:'Chăn nuôi phát triển trên nguồn thức ăn từ nông nghiệp.',horses:'Thuần dưỡng ngựa là chuyên môn tiếp theo của chăn nuôi.',commerce:'Trao đổi hàng hóa là hướng phát triển độc lập, không bắt buộc học kho lương.',roads:'Chế tác đá cung cấp nền móng và vật liệu làm đường; không bắt buộc học thương mại.',
+ basic_woodworking:'Nền gia công gỗ, có thể học ngay từ đầu.',forestry:'Chuyên môn quản lý nguồn gỗ và trồng rừng; không phải điều kiện để chế tạo vũ khí.',advanced_woodworking:'Gia công chính xác và cơ cấu gỗ phát triển trực tiếp từ chế biến gỗ.',mining:'Nền khai thác khoáng sản, có thể học ngay từ đầu.',stoneworking:'Phân nhánh khai khoáng theo hướng xử lý vật liệu đá.',basic_metalworking:'Phân nhánh khai khoáng theo hướng luyện kim.',ironworking:'Chuyên sâu từ luyện kim sang rèn sắt.',steel:'Luyện thép tiếp nối rèn sắt; không bắt học nghề mộc.',
+ shields:'Gia công gỗ đủ làm nền cho khiên và huấn luyện đội hình khiên.',spearmen:'Vũ khí mũi kim loại dựa trên luyện kim.',swords:'Kiếm thuật dựa trên vũ khí rèn sắt; không cần mở giáo binh.',pikes:'Kết hợp đội hình giáo với kỹ thuật làm cán gỗ dài.',heavy_infantry:'Kết hợp chiến đấu bộ binh dùng kiếm và giáp thép.',paladins:'Chuyên môn cứu chữa của kỵ binh tinh nhuệ; không cần đi qua bộ binh nặng.',
+ archery:'Gia công gỗ tạo nền chế tạo cung.',rangers:'Kết hợp cung thuật với kỹ năng trinh sát; không cần quản lý rừng kinh tế.',crossbows:'Nỏ là cơ cấu gỗ chính xác kết hợp kim loại; không bắt học đơn vị cung thủ.',marksman:'Chuyên môn ngắm bắn của lính nỏ, không phụ thuộc luyện kim nâng cao.',
+ recon:'Trinh sát bộ là lựa chọn mở đầu độc lập.',light_cavalry:'Thuần dưỡng ngựa mở nền huấn luyện kỵ binh; không cần mở trinh sát bộ.',mounted_archery:'Kết hợp cưỡi ngựa và cung thuật; không cần mở kiểm lâm.',knights:'Kết hợp kỵ binh với trang bị rèn sắt; không cần mở kiếm binh hoặc giáo binh.',heavy_cavalry:'Nâng kỵ sĩ bằng giáp thép.',
+ siege:'Máy chiến tranh kết hợp cơ khí gỗ với kim loại.',ballistas:'Ballista kết hợp nguyên lý nỏ với kỹ thuật chế tạo máy công thành.',catapults:'Máy bắn đá phát triển từ kỹ thuật công thành; đá là chi phí chế tạo, không bắt nâng mỏ đá.',siege_logistics:'Kết hợp kỹ thuật máy với đường bộ để tổ chức vận chuyển và triển khai.',trebuchets:'Phát triển catapult thành máy lớn, có hậu cần triển khai; không bắt học giáp thép.',walls:'Công trình phòng thủ dựa trên chế tác đá.',towers:'Kết hợp công trình phòng thủ với cung thủ giữ tháp.',engineering:'Kết hợp hạ tầng đường bộ và cơ khí gỗ để làm cầu, sửa chữa; không cần học phá thành.',
+ naval:'Đóng thuyền bắt đầu từ gia công gỗ.',transports:'Tàu chở quân phát triển trực tiếp từ hàng hải.',sailing:'Kết hợp hàng hải với kỹ thuật đóng thân tàu và cơ cấu gỗ tốt hơn.',warships:'Kết hợp tàu đi biển với vũ khí bắn xa.',heavy_warships:'Lắp vũ khí ballista lên nền chiến hạm.',amphibious:'Chuyên môn lên bờ của lực lượng vận tải; không bắt học công binh hoặc công thành.',
+};
