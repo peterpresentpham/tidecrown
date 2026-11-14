@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { TECHNOLOGIES, TECHNOLOGY_LOGIC } from '../src/data/technologies';
 import { createClassicGame, execute, researchReason } from '../src/game/engine';
 import { researchStatus } from '../src/game/research';
+
 test('bright research availability matches actual engine permission for every node', () => {
   const s = createClassicGame();
   for (const t of Object.values(TECHNOLOGIES)) {

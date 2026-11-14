@@ -129,7 +129,7 @@ Không dùng quan hệ khắc chế cứng “A luôn thắng B”. HP còn lạ
 
 Chỉ số cơ bản trong bảng là đầu vào. Sát thương thực tế nhân hệ số HP sau phòng thủ, sàn 60%; phản kích dùng HP sau trúng đòn. Quân cận chiến tạo vùng khống chế cùng môi trường bộ/biển, trừ quân đang trên tàu. Nghỉ hồi 2 HP (3 tại thành mình) khi chưa hành động và không kề địch. Chi tiết ở [gameplay](gameplay.md#chiến-đấu).
 
-Mỗi loại có mô hình và vũ khí riêng; chân, bánh, vũ khí giữ pivot độc lập cho hoạt ảnh.
+Quân bộ và kỵ là nhân vật có xương (trang phục, mũ, vũ khí, ngựa riêng theo loại) chơi animation đi/đánh/trúng đòn/chết; máy công thành giữ pivot cánh tay, tàu là mô hình tĩnh.
 
 ## Kiểm tra
 

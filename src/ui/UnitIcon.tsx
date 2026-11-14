@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 
 import { UNITS, type UnitType } from '../data/units';
+
 export function iconFor(type: UnitType) {
   if (type === 'transport') return Anchor;
   if (type === 'scout') return Telescope;

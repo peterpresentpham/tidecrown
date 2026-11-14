@@ -10,6 +10,7 @@ import {
   UNITS,
 } from '../game/engine';
 import { isVisible, sightRange } from '../game/visibility';
+
 export type TravelRoute = { cost: number; path: string[] };
 
 /** The input is an observation, never the raw world. Avoid edges the unit cannot

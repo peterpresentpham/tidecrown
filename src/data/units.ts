@@ -1,5 +1,6 @@
 import type { Resource } from '../game/engine';
 import type { TechnologyId } from './technologies';
+
 export type UnitType =
   | 'clubman'
   | 'scout'

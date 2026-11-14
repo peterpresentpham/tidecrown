@@ -8,6 +8,7 @@ import { createClassicGame, UNITS, type UnitType } from '../../src/game/engine';
 import { emptyKnowledge, refreshKnowledge } from '../../src/game/visibility';
 import { SAVE_KEY } from '../../src/persistence/save';
 import { App } from '../../src/ui/App';
+
 const s = createClassicGame();
 s.cities = s.cities.slice(0, 3);
 s.cities[0].tile = '0,2';

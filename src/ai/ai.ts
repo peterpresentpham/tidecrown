@@ -16,6 +16,7 @@ import { nextDevelopmentCommand } from './development';
 import { explorationPath, explorationRoutes, visiblePathDestination } from './exploration';
 import { planNavy } from './naval';
 import { nextArmyCommand, restingInTown } from './tactics';
+
 export function nextAICommand(raw: State): Command {
   if (raw.turn === 'player' || raw.winner) return { type: 'end' };
   return nextFactionCommand(raw);

@@ -5,6 +5,7 @@ import { type Command, execute, type FactionId, type State, UNITS } from '../src
 import { observe } from '../src/game/visibility';
 import { World } from '../src/render/World';
 import { SCENARIOS, type TacticalScenario, tacticalScenario } from './helpers/tacticalScenarios';
+
 const host = document.getElementById('world')!,
   result = document.getElementById('result')!,
   roster = document.getElementById('roster')!,

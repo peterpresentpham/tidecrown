@@ -27,6 +27,7 @@ import {
 } from '../src/game/engine';
 import { emptyKnowledge, observe, refreshKnowledge } from '../src/game/visibility';
 import { parseSave } from '../src/persistence/save';
+
 const apply = (s: State, c: Command) => {
   const r = execute(s, c);
   assert.equal(r.error, undefined, `${JSON.stringify(c)}: ${r.error}`);

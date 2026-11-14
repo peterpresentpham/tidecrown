@@ -1,5 +1,6 @@
 import type { Command, State } from './engine';
 import { observe } from './visibility';
+
 export type MoveUndo = { before: State; after: State };
 /** A single immutable snapshot; any intervening command invalidates its identity. */
 export function moveUndo(before: State, after: State, cmd: Command): MoveUndo | null {

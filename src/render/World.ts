@@ -25,6 +25,8 @@ import {
   DEFAULT_UI_PREFERENCES,
   type GraphicsQuality,
 } from '../ui/playbackPolicy';
+import { type Character, characterCache, type Pose } from './characters';
+import { loadedModels, loadModels, type ModelLibrary } from './modelLibrary';
 import { buildUnitModel } from './unitModels';
 import { FACTION_SYMBOL } from './visualIdentity';
 
@@ -34,11 +36,11 @@ export function worldPoint(tile: { q: number; r: number }, y = 0) {
 const COLORS = {
   grass: ['#71984e', '#749b50', '#6e954d'],
   forest: ['#608745', '#658a47'],
-  hill: ['#b2ae80', '#a9a57a'],
+  hill: ['#9aa66a', '#93a065'],
   mountain: ['#8c998c'],
   sand: ['#d3c39a', '#dfcea5'],
   water: ['#4a8c9b'],
-  unknown: ['#050608'],
+  unknown: ['#0b161c'],
 };
 const pickColor = (t: Tile) =>
   COLORS[t.terrain][Math.abs(t.q * 7 + t.r * 3) % COLORS[t.terrain].length];
@@ -77,6 +79,10 @@ export class World {
   private pointer = new THREE.Vector2();
   private tileMeshes: THREE.Object3D[] = [];
   private state: State;
+  /** Last raw state passed to sync, so the scene can be rebuilt when models finish loading. */
+  private raw: State | null = null;
+  private models: ModelLibrary | null = loadedModels();
+  private characters = characterCache.library;
   private labelLayer: HTMLDivElement;
   private labels: { el: HTMLButtonElement; pos: THREE.Vector3; follow?: THREE.Group }[] = [];
   private unitModels = new Map<string, THREE.Group>();
@@ -134,8 +140,8 @@ export class World {
     this.fogTexture.magFilter = THREE.LinearFilter;
     this.fogTexture.minFilter = THREE.LinearFilter;
     this.fogTexture.generateMipmaps = false;
-    this.scene.background = new THREE.Color('#050608');
-    this.scene.fog = new THREE.Fog('#050608', 65, 115);
+    this.scene.background = new THREE.Color('#0b161c');
+    this.scene.fog = new THREE.Fog('#0b161c', 65, 115);
     this.camera = new THREE.OrthographicCamera(-18, 18, 15, -15, 0.1, 150);
     this.camera.position.set(12, 19, 16);
     this.renderer = new THREE.WebGLRenderer({
@@ -170,13 +176,13 @@ export class World {
     this.labelLayer = document.createElement('div');
     this.labelLayer.className = 'world-labels';
     container.appendChild(this.labelLayer);
-    const ambient = new THREE.HemisphereLight('#fff8de', '#679a9f', 2.1);
+    const ambient = new THREE.HemisphereLight('#f6f2e4', '#58766a', 1.85);
     this.scene.add(ambient);
-    const sun = new THREE.DirectionalLight('#fff1cd', 2.6);
-    sun.position.set(-12, 24, 12);
+    const sun = new THREE.DirectionalLight('#ffe4b8', 3.1);
+    sun.position.set(-14, 26, 9);
     sun.castShadow = this.quality === 'normal';
     this.sun = sun;
-    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.left = -40;
     sun.shadow.camera.right = 40;
     sun.shadow.camera.top = 32;
@@ -210,6 +216,44 @@ export class World {
     this.renderer.domElement.addEventListener('contextmenu', this.contextMenu);
     window.addEventListener('keydown', this.keyDown);
     this.animate();
+    if (!this.models)
+      void loadModels().then((library) => {
+        if (!library || this.disposed) return;
+        this.models = library;
+        this.rebuildScene();
+      });
+    if (!this.characters)
+      // Loaded lazily: the file list comes from Vite's import.meta.glob (not available in Node tests).
+      void import('./characterAssets')
+        .then((m) => m.loadCharacters())
+        .then((library) => {
+          if (!library || this.disposed) return;
+          this.characters = library;
+          this.rebuildScene();
+        });
+  }
+  /** Re-creates every map tile, city and unit (e.g. once the 3D models have loaded). */
+  private rebuildScene() {
+    this.mapSignatures.clear();
+    this.batchSignature = '';
+    for (const g of this.unitModels.values()) {
+      this.troops.remove(g);
+      this.clearGroup(g);
+    }
+    this.unitModels.clear();
+    if (this.raw)
+      this.sync(this.raw, this.selectedUnit, this.selectedTile, this.showGrid, this.actionTiles);
+  }
+  /** A baked library model as a vertex-coloured mesh (geometry owned by this world). */
+  private model(name: string, parent: THREE.Object3D, team?: string) {
+    const mesh = new THREE.Mesh<THREE.BufferGeometry, THREE.Material>(
+      this.geometry(this.models!.geometry(name, team)),
+      this.vertexMaterial()
+    );
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    parent.add(mesh);
+    return mesh;
   }
   private mat(color: string, opacity = 1) {
     const key = color + opacity;
@@ -238,7 +282,7 @@ export class World {
           vec2 fogUV=vec2((vNationFogWorld.x/1.9+16.5)/33.0,(vNationFogWorld.y/1.9+12.5)/25.0);
           float charted=texture2D(nationFogMask,fogUV).r;
           float edgeVisibility=smoothstep(0.35,0.95,charted);
-          gl_FragColor.rgb=mix(vec3(0.0196,0.0235,0.0314),gl_FragColor.rgb,edgeVisibility);
+          gl_FragColor.rgb=mix(vec3(0.0034,0.0080,0.0102),gl_FragColor.rgb,edgeVisibility);
         `
           );
       };
@@ -300,6 +344,7 @@ export class World {
               .filter((n) => distance(t, n) === 1 && (n.road || cityAt(this.state, n.id)))
               .map((n) => n.id)
           : null,
+        t.terrain === 'water' ? this.shoreSides(t).join('') : null,
       ]);
       if (this.mapSignatures.get(t.id) === signature) continue;
       const old = this.mapGroups.get(t.id);
@@ -314,9 +359,10 @@ export class World {
       this.mapGroups.set(t.id, parent);
       const p = worldPoint(t);
       const depth = t.terrain === 'water' ? 0.06 : t.height + 0.44;
+      const shore = t.terrain === 'water' ? this.shoreSides(t) : [];
       const tile = this.mesh(
         new THREE.BoxGeometry(1.9, depth, 1.9),
-        pickColor(t),
+        t.terrain === 'water' ? (shore.length ? '#5fa9b2' : '#3e8597') : pickColor(t),
         parent,
         p.x,
         t.terrain === 'water' ? -0.2 : (t.height - 0.44) / 2,
@@ -328,6 +374,19 @@ export class World {
       this.improvementModel(parent, t, p);
       if (t.terrain === 'water') {
         tile.receiveShadow = false;
+        // Pale foam along every edge that touches land.
+        for (const [dq, dr] of shore) {
+          const foam = this.mesh(
+            new THREE.BoxGeometry(dq ? 0.16 : 1.9, 0.012, dq ? 1.9 : 0.16),
+            '#d6efe8',
+            parent,
+            p.x + dq * 0.87,
+            -0.165,
+            p.z + dr * 0.87
+          );
+          foam.castShadow = false;
+          this.decor(foam);
+        }
         if ((t.q * 3 + t.r) % 5 === 0) {
           const wave = this.mesh(
             new THREE.BoxGeometry(0.45, 0.008, 0.017),
@@ -343,53 +402,8 @@ export class World {
         continue;
       }
       if (this.state.cities.some((c) => c.tile === t.id)) continue;
-      if (t.terrain === 'forest') {
-        for (const [index, [dx, dz, scale]] of [
-          [-0.28, -0.15, 1],
-          [0.31, 0.2, 0.8],
-          [0.08, -0.4, 0.65],
-        ].entries()) {
-          const g = new THREE.Group();
-          g.position.set(p.x + dx, t.height, p.z + dz);
-          g.scale.setScalar(scale);
-          parent.add(g);
-          // Low quality keeps one full tree per forest tile so the terrain still reads as forest.
-          if (index > 0) this.decor(g);
-          this.mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.45, 5), '#70674b', g, 0, 0.2);
-          this.mesh(new THREE.ConeGeometry(0.37, 0.77, 6), '#426d55', g, 0, 0.68);
-          this.mesh(new THREE.ConeGeometry(0.28, 0.62, 6), '#557d5c', g, 0, 1.05);
-        }
-      } else if (t.terrain === 'mountain') {
-        this.mesh(
-          new THREE.ConeGeometry(0.7, 1.4, 5),
-          '#879387',
-          parent,
-          p.x,
-          t.height + 0.63,
-          p.z
-        );
-        this.decor(
-          this.mesh(
-            new THREE.ConeGeometry(0.27, 0.45, 5),
-            '#dedbc3',
-            parent,
-            p.x,
-            t.height + 1.15,
-            p.z
-          )
-        );
-      } else if ((t.q * 5 + t.r * 3) % 7 === 0) {
-        const rock = this.mesh(
-          new THREE.DodecahedronGeometry(0.19, 0),
-          '#a4aa8d',
-          parent,
-          p.x + 0.32,
-          t.height + 0.1,
-          p.z - 0.3
-        );
-        rock.scale.y = 0.7;
-        this.decor(rock);
-      }
+      // Scenery appears once the model library has loaded.
+      if (this.models) this.terrainModels(parent, t, p);
     }
     for (const group of this.mapGroups.values())
       group.traverse((o) => {
@@ -400,6 +414,49 @@ export class World {
           }
         }
       });
+  }
+  /** Directions [dq, dr] from a water tile to explored land neighbours. */
+  private shoreSides(t: Tile): [number, number][] {
+    return (
+      [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as [number, number][]
+    ).filter(([dq, dr]) => {
+      const n = tileAt(this.state, `${t.q + dq},${t.r + dr}`);
+      return !!n && n.terrain !== 'water' && n.terrain !== 'unknown';
+    });
+  }
+  /** Library scenery for one tile: tree clusters, mountains, hill mounds and small decor. */
+  private terrainModels(parent: THREE.Group, t: Tile, p: THREE.Vector3) {
+    const hash = Math.abs((t.q * 73856093) ^ (t.r * 19349663));
+    const pick = (names: string[]) => names[hash % names.length];
+    const place = (name: string, x = 0, z = 0, scale = 1, turn = hash % 6) => {
+      const m = this.model(name, parent);
+      m.position.set(p.x + x, t.height, p.z + z);
+      m.rotation.y = (turn * Math.PI) / 3;
+      m.scale.setScalar(scale);
+      m.userData.tile = t.id;
+      return m;
+    };
+    const busy = !!(t.improvement || t.road || t.bridge);
+    if (t.terrain === 'forest') {
+      // Lumber camps thin the forest so the camp stays visible.
+      if (t.improvement === 'lumber') place('forest_cut', -0.4, -0.35, 0.8);
+      else place(pick(['forest_A', 'forest_B']));
+    } else if (t.terrain === 'mountain') place(pick(['mountain_A', 'mountain_B', 'mountain_C']));
+    else if (t.terrain === 'hill') {
+      if (!busy) place(pick(['hill_A', 'hill_B']));
+      else this.decor(place('rock_A', -0.55, -0.5));
+      if (hash % 3 === 0) this.decor(place('bush', 0.55, 0.5));
+    } else if (t.terrain === 'water') return;
+    else if (busy) return;
+    else if (hash % 13 === 0) this.decor(place('tree_common', 0.45, -0.4));
+    else if (hash % 13 === 1) this.decor(place('tree_pine', -0.4, 0.35));
+    else if (hash % 13 === 2) this.decor(place(pick(['rock_A', 'rock_B', 'rock_C']), 0.35, -0.3));
+    else if (hash % 13 === 3) this.decor(place(pick(['bush', 'bush_berries']), -0.3, -0.35));
   }
   private updateMapFog(raw: State) {
     const data = this.fogTexture.image.data as Uint8Array;
@@ -432,157 +489,83 @@ export class World {
     g.traverse((o) => {
       if (o instanceof THREE.Mesh) {
         const base = o.material as THREE.MeshStandardMaterial;
-        o.material = this.mat(base.color.clone().multiplyScalar(0.24).getStyle());
+        o.material = base.vertexColors
+          ? this.vertexMaterial(true)
+          : this.mat(base.color.clone().multiplyScalar(0.24).getStyle());
         o.castShadow = false;
       }
     });
   }
-  private flag(parent: THREE.Object3D, color: string, x: number, y: number, z: number, scale = 1) {
-    this.mesh(
-      new THREE.CylinderGeometry(0.024, 0.024, 0.9 * scale, 5),
-      '#6c6150',
-      parent,
-      x,
-      y + 0.45 * scale,
-      z
-    );
-    this.box(
-      parent,
-      color,
-      [0.43 * scale, 0.25 * scale, 0.028],
-      [x + 0.2 * scale, y + 0.73 * scale, z]
-    );
-  }
-  private cityModel(city: City): THREE.Group {
+  /** Cities from library buildings; the front-right corner stays free for a garrison unit. */
+  private cityFromModels(city: City): THREE.Group {
     const g = new THREE.Group();
-    const color = city.owner ? FACTIONS[city.owner].color : '#d5bd83';
+    const team = city.owner ? FACTIONS[city.owner].color : undefined;
+    const place = (name: string, x: number, z: number, scale = 1, turn = 0) => {
+      const m = this.model(name, g, team);
+      m.position.set(x, 0, z);
+      m.scale.setScalar(scale);
+      m.rotation.y = turn;
+      return m;
+    };
     if (!city.owner) {
-      this.box(g, '#9d7549', [0.7, 0.65, 0.65], [0, 0.33, 0]);
-      this.mesh(new THREE.ConeGeometry(0.68, 0.65, 4), '#c9b57c', g, 0, 0.94, 0).rotation.y =
-        Math.PI / 4;
-      this.box(g, '#544631', [0.2, 0.32, 0.03], [0, 0.17, 0.34]);
+      place('home_A', -0.3, -0.25, 1, 0.5);
+      place('home_B', 0.35, -0.35, 1, -0.4);
+      place('well', -0.35, 0.45);
+      this.decor(place('fence', 0.1, 0.55, 0.8, Math.PI / 2));
       return g;
     }
-    const stone = city.level > 1 ? '#e0d9bc' : '#b6b6a0';
-    const wall = city.fort > 0 ? stone : '#92937e';
-    const h = city.level === 3 ? 0.85 : city.level > 1 ? 0.6 : 0.38;
-    this.mesh(new THREE.CylinderGeometry(0.83, 0.91, 0.13, 6), '#b7aa85', g, 0, 0.04);
-    for (const x of [-0.59, 0.59])
-      for (const z of [-0.46, 0.46]) {
-        this.box(g, wall, [0.26, h + 0.18, 0.26], [x, (h + 0.18) / 2 + 0.08, z]);
-        this.mesh(new THREE.ConeGeometry(0.23, 0.27, 4), color, g, x, h + 0.35, z).rotation.y =
-          Math.PI / 4;
-      }
     if (city.fort > 0) {
-      for (const x of [-0.59, 0.59]) this.box(g, wall, [0.13, h, 0.86], [x, h / 2 + 0.06, 0]);
-      this.box(g, wall, [1.1, h, 0.13], [0, h / 2 + 0.06, -0.46]);
-      for (const x of [-0.4, 0.4]) this.box(g, wall, [0.36, h, 0.13], [x, h / 2 + 0.06, 0.46]);
-      for (let x = -0.4; x <= 0.41; x += 0.2)
-        this.box(g, wall, [0.09, 0.11, 0.16], [x, h + 0.12, -0.46]);
+      // Walls only on the far edges so they never hide units standing in the city.
+      const wall = city.fort >= 20 ? 'wall_stone' : 'wall';
+      place(wall, 0, -0.85);
+      place(wall, -0.85, 0, 1, Math.PI / 2);
     }
-    this.box(
-      g,
-      '#e6d8b7',
-      [0.43 + city.level * 0.07, 0.4 + city.level * 0.22, 0.48],
-      [0, 0.27 + city.level * 0.11, -0.06]
-    );
-    this.mesh(
-      new THREE.ConeGeometry(0.41, 0.38, 4),
-      color,
-      g,
-      0,
-      0.65 + city.level * 0.26,
-      -0.06
-    ).rotation.y = Math.PI / 4;
-    this.box(g, '#665b48', [0.12, 0.21, 0.02], [0, 0.2, 0.19]);
-    this.flag(g, color, 0.18, 0.88, -0.12, 0.7);
-    if (hasBuilding(city, 'farm'))
-      for (let i = 0; i < 4; i++)
-        this.box(
-          g,
-          i % 2 ? '#b5a25a' : '#8c854c',
-          [0.09, 0.06, 0.46],
-          [-0.35 + i * 0.11, 0.12, 0.91]
-        );
-    if (hasBuilding(city, 'market')) {
-      this.box(g, '#78694d', [0.5, 0.2, 0.3], [0.8, 0.16, 0.2]);
-      this.box(g, '#c79d70', [0.55, 0.06, 0.4], [0.8, 0.42, 0.2]);
-    }
-    if (hasBuilding(city, 'lumber'))
-      for (let i = 0; i < 3; i++) {
-        const log = this.mesh(
-          new THREE.CylinderGeometry(0.07, 0.07, 0.6, 6),
-          '#90724e',
-          g,
-          0.83,
-          0.13 + i * 0.1,
-          0.1
-        );
-        log.rotation.z = Math.PI / 2;
-      }
-    if (hasBuilding(city, 'stable')) {
-      this.box(g, '#815f3f', [0.45, 0.35, 0.5], [0.9, 0.18, -0.45]);
-      this.box(g, color, [0.55, 0.08, 0.6], [0.9, 0.4, -0.45]);
-    }
-    if (hasBuilding(city, 'forge')) {
-      this.box(g, '#5d665e', [0.35, 0.4, 0.35], [-0.8, 0.2, -0.55]);
-      this.box(g, '#edaa51', [0.15, 0.15, 0.03], [-0.8, 0.16, -0.36]);
-    }
-    if (hasBuilding(city, 'wall') && city.fort > 0)
-      for (const x of [-0.5, -0.25, 0, 0.25, 0.5])
-        this.box(g, '#a0a995', [0.14, 0.15, 0.18], [x, h + 0.2, 0.46]);
-    if (city.fort === 0)
-      for (const x of [-0.6, 0.6]) this.box(g, '#777c6d', [0.3, 0.12, 0.5], [x, 0.12, 0.4]);
-    if (hasBuilding(city, 'tower')) {
-      this.box(g, '#a5af9d', [0.28, 1, 0.28], [-0.65, 0.5, -0.65]);
-      this.box(g, color, [0.38, 0.1, 0.38], [-0.65, 1.03, -0.65]);
-    }
+    place(city.level >= 3 ? 'town_3' : city.level === 2 ? 'town_2' : 'town_1', -0.1, -0.15);
+    // Town halls carry no faction material; a banner shows the owner.
+    this.box(g, '#5d4a35', [0.04, 1.3, 0.04], [0.42, 0.65, 0.3]);
+    this.box(g, team!, [0.42, 0.26, 0.03], [0.63, 1.12, 0.3]);
+    const extras: string[] = [];
+    if (city.job) extras.push('crates');
+    if (hasBuilding(city, 'tower')) extras.push('tower');
+    if (hasBuilding(city, 'market')) extras.push('market');
+    if (['forge', 'iron_forge', 'steelworks'].some((b) => hasBuilding(city, b as never)))
+      extras.push('blacksmith');
+    if (hasBuilding(city, 'granary')) extras.push('storage');
+    if (hasBuilding(city, 'lumber')) extras.push('sawmill');
+    if (hasBuilding(city, 'stable')) extras.push('stable');
+    if (['workshop', 'siege_workshop'].some((b) => hasBuilding(city, b as never)))
+      extras.push('archery');
+    if (hasBuilding(city, 'farm')) extras.push('windmill');
+    const slots: [number, number][] = [
+      [0.62, -0.5],
+      [-0.58, 0.58],
+      [0.05, 0.68],
+    ];
+    extras.slice(0, slots.length).forEach((name, i) => place(name, slots[i][0], slots[i][1]));
     if (hasBuilding(city, 'port')) {
       const water = this.state.tiles.find(
         (t) => t.terrain === 'water' && distance(t, tileAt(this.state, city.tile)) === 1
       );
       if (water) {
-        const dock = new THREE.Group(),
-          home = tileAt(this.state, city.tile);
-        dock.rotation.y = Math.atan2(water.q - home.q, water.r - home.r);
-        g.add(dock);
-        for (let i = 0; i < 5; i++)
-          this.box(dock, '#a7895e', [0.6, 0.08, 0.15], [-0.55, 0.03, 0.75 + i * 0.2]);
+        const home = tileAt(this.state, city.tile);
+        const turn = Math.atan2(water.q - home.q, water.r - home.r);
+        place('port', Math.sin(turn) * 0.95, Math.cos(turn) * 0.95, 1, turn);
       }
     }
-    if (hasBuilding(city, 'granary')) {
-      this.mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.5, 8), '#d6c495', g, 0.9, 0.25, 0.7);
-      this.mesh(new THREE.ConeGeometry(0.25, 0.2, 6), color, g, 0.9, 0.6, 0.7);
-    }
-    if (hasBuilding(city, 'workshop')) {
-      this.box(g, '#97734b', [0.5, 0.3, 0.3], [-0.9, 0.15, 0.5]);
-      this.mesh(new THREE.TorusGeometry(0.17, 0.05, 5, 8), '#c2c4ad', g, -0.9, 0.45, 0.5);
-    }
-    if (hasBuilding(city, 'siege_workshop')) {
-      this.box(g, '#715735', [0.65, 0.25, 0.4], [0, 0.15, -0.9]);
-      const beam = this.box(g, '#bea372', [0.08, 0.85, 0.08], [0, 0.65, -0.9]);
-      beam.rotation.x = 0.4;
-    }
-    if (hasBuilding(city, 'iron_forge'))
-      this.box(g, '#555e63', [0.18, 0.7, 0.18], [-0.9, 0.6, -0.6]);
-    if (hasBuilding(city, 'steelworks'))
-      for (const x of [-1, -0.75]) this.box(g, '#bdc3c2', [0.12, 0.95, 0.12], [x, 0.65, -0.6]);
-    if (hasBuilding(city, 'shipyard')) {
-      for (const x of [0.7, 1.1]) this.box(g, '#b99a64', [0.08, 0.85, 0.08], [x, 0.42, 0.8]);
-      this.box(g, '#b99a64', [0.55, 0.08, 0.08], [0.9, 0.9, 0.8]);
-    }
-    if (city.fort > 0 && city.fort < 10)
-      for (const x of [-0.45, 0, 0.45]) this.box(g, '#494d46', [0.08, 0.25, 0.015], [x, 0.3, 0.54]);
-    if (city.job) {
-      for (const x of [-0.8, 0.8]) this.box(g, '#87734e', [0.04, 0.9, 0.04], [x, 0.45, 0.6]);
-      this.box(g, '#a18c61', [1.65, 0.045, 0.045], [0, 0.65, 0.6]);
-    }
+    if (city.fort > 0 && city.fort < 10) this.decor(place('ruin', 0.6, 0.05));
     return g;
+  }
+  private cityModel(city: City): THREE.Group {
+    // Cities appear once the model library has loaded (labels show meanwhile).
+    return this.models ? this.cityFromModels(city) : new THREE.Group();
   }
   private unitModel(unit: Unit) {
     const g = buildUnitModel(unit, {
       mesh: (...args) => this.mesh(...args),
       box: (...args) => this.box(...args),
+      library: this.models,
+      model: (...args) => this.model(...args),
+      characters: this.characters,
     });
     this.mergeRigidParts(g);
     return g;
@@ -591,12 +574,14 @@ export class World {
    * Bakes the model's static parts that share a material into one mesh (same shape and colours, far
    * fewer draw calls). Legs, wheels and weapon pivots stay separate because actions animate them.
    */
-  private vertexMaterial() {
-    const key = 'v2-vertex';
+  private vertexMaterial(remembered = false) {
+    const key = remembered ? 'v2-vertex-memory' : 'v2-vertex';
     let material = this.materials.get(key);
     if (!material) {
       material = this.mat('#ffffff').clone();
       material.vertexColors = true;
+      // Remembered (fogged) cities and units keep their colours, darkened like terrain memory.
+      if (remembered) material.color.setScalar(0.24);
       material.onBeforeCompile = this.mat('#ffffff').onBeforeCompile;
       material.customProgramCacheKey = () => key;
       this.materials.set(key, material);
@@ -622,13 +607,12 @@ export class World {
   private mergeRigidParts(g: THREE.Group) {
     const animated = new Set<THREE.Object3D>(
       [
-        ...(g.userData.legs ?? []),
-        ...(g.userData.wheels ?? []),
         g.userData.weapon,
-        g.userData.sail,
+        // Skinned characters share library geometry and animate every bone.
+        (g.userData.character as Character | undefined)?.root,
       ].filter(Boolean)
     );
-    for (const o of animated) if (o instanceof THREE.Group) this.mergeRigidParts(o);
+    if (g.userData.weapon instanceof THREE.Group) this.mergeRigidParts(g.userData.weapon);
     g.updateMatrixWorld(true);
     const inverse = g.matrixWorld.clone().invert(),
       meshes: THREE.Mesh[] = [];
@@ -722,29 +706,32 @@ export class World {
         this.box(bridge, '#987345', [1.82, 0.12, 0.16], [0, 0.12, z]);
       for (const x of [-0.6, 0.6]) this.box(bridge, '#c2aa76', [0.06, 0.5, 1.8], [x, 0.38, 0]);
     }
-    if (t.improvement?.includes('farm') || t.improvement === 'pasture')
-      for (let i = 0; i < 4; i++)
-        this.box(
-          parent,
-          t.improvement === 'pasture' ? '#a3b777' : '#cab05f',
-          [1.35, 0.05, 0.1],
-          [p.x, t.height + 0.04, p.z - 0.5 + i * 0.32]
-        );
-    if (t.improvement === 'irrigated_farm')
-      this.box(parent, '#6bb7c3', [0.09, 0.065, 1.65], [p.x + 0.65, t.height + 0.04, p.z]);
-    if (['mine', 'quarry'].includes(t.improvement ?? '')) {
-      this.box(parent, '#555e55', [0.65, 0.12, 0.65], [p.x, t.height + 0.03, p.z]);
-      this.box(parent, '#ad9a6e', [0.1, 0.6, 0.1], [p.x - 0.3, t.height + 0.3, p.z]);
-      this.box(parent, '#ad9a6e', [0.8, 0.1, 0.1], [p.x, t.height + 0.58, p.z]);
-    }
-    if (t.improvement === 'lumber')
-      for (let i = 0; i < 3; i++)
-        this.box(
-          parent,
-          '#c09a63',
-          [0.45, 0.1, 0.12],
-          [p.x + 0.5, t.height + 0.12 + i * 0.1, p.z + 0.5]
-        );
+    if (!this.models) return;
+    const place = (name: string, x = 0, z = 0, turn = 0) => {
+      const m = this.model(name, parent);
+      m.position.set(p.x + x, t.height, p.z + z);
+      m.rotation.y = turn;
+      m.userData.tile = t.id;
+      return m;
+    };
+    if (t.improvement?.includes('farm')) {
+      place('farm');
+      if (t.improvement === 'irrigated_farm')
+        this.box(parent, '#6bb7c3', [0.09, 0.065, 1.65], [p.x + 0.82, t.height + 0.04, p.z]);
+    } else if (t.improvement === 'mine' || t.improvement === 'quarry') {
+      place('mine', 0, 0, Math.PI / 6);
+      if (t.improvement === 'quarry') place('stone', 0.5, 0.5);
+    } else if (t.improvement === 'lumber') {
+      place('logs', 0.35, 0.4);
+      place('crates', -0.35, 0.35);
+    } else if (t.improvement === 'pasture')
+      for (const [x, z, turn] of [
+        [0, -0.8, Math.PI / 2],
+        [0, 0.8, Math.PI / 2],
+        [-0.8, 0, 0],
+        [0.8, 0, 0],
+      ])
+        place('fence', x, z, turn).scale.set(1, 1, 1.7);
   }
   private territories() {
     const tiles = new Map(this.state.tiles.map((t) => [t.id, t]));
@@ -800,6 +787,7 @@ export class World {
     grid: boolean,
     actionTiles: string[] = []
   ) {
+    this.raw = state;
     state = observe(state, 'player');
     this.state = state;
     const mapSignature = JSON.stringify([
@@ -937,8 +925,8 @@ export class World {
     this.clearGroup(this.effectGroup);
     for (const g of this.unitModels.values()) {
       g.position.copy(g.userData.target);
-      for (const leg of g.userData.legs ?? []) leg.rotation.x = 0;
       if (g.userData.weapon) g.userData.weapon.rotation.x = 0;
+      (g.userData.character as Character | undefined)?.play('idle');
     }
     this.visual = null;
     this.renderer.shadowMap.needsUpdate = true;
@@ -1013,6 +1001,27 @@ export class World {
     const from = worldPoint(tileAt(this.state, e.from), tileAt(this.state, e.from).height + 0.1),
       to = worldPoint(tileAt(this.state, e.to), tileAt(this.state, e.to).height + 0.1),
       direction = to.clone().sub(from).setY(0).normalize();
+    const cue = (g: THREE.Object3D | undefined, pose: Pose) => {
+      const character = g?.userData.character as Character | undefined;
+      if (character && character.pose !== pose && !(character.pose === 'death'))
+        character.play(pose);
+    };
+    const dying = (g: THREE.Object3D) => v.ghosts.includes(g as THREE.Group) && e.kind === 'attack';
+    if (actor && !dying(actor))
+      cue(
+        actor,
+        ['move', 'land', 'board'].includes(e.kind)
+          ? 'walk'
+          : e.kind === 'attack'
+            ? t < 0.75
+              ? 'attack'
+              : 'idle'
+            : 'work'
+      );
+    if (target && e.kind === 'attack' && t > 0.4)
+      cue(target, dying(target) ? 'death' : e.retaliation && t > 0.65 ? 'attack' : 'hit');
+    for (const g of v.ghosts)
+      if (e.kind === 'attack' && t > (g.userData.unitId === e.actor ? 0.75 : 0.45)) cue(g, 'death');
     if (actor) {
       actor.rotation.y = Math.atan2(direction.x, direction.z);
       if (['move', 'land', 'board'].includes(e.kind)) {
@@ -1029,9 +1038,6 @@ export class World {
         actor.position.lerpVectors(path[i], path[i + 1], progress - i);
         if (!this.reduced) {
           actor.position.y += Math.abs(Math.sin(t * Math.PI * 6)) * 0.055;
-          for (const [index, leg] of (actor.userData.legs ?? []).entries())
-            leg.rotation.x = Math.sin(t * Math.PI * 8 + index * Math.PI) * 0.35;
-          for (const w of actor.userData.wheels ?? []) w.rotation.x = t * Math.PI * 4;
         }
       } else if (e.kind === 'attack' && v.actorBase) {
         actor.position.copy(v.actorBase);
@@ -1085,7 +1091,8 @@ export class World {
     }
     for (const g of v.ghosts) {
       const start = g.userData.unitId === e.actor ? 0.75 : 0.5;
-      if (e.kind === 'attack' && t > start) {
+      // Characters play their death animation instead of collapsing.
+      if (e.kind === 'attack' && t > start && !g.userData.character) {
         const collapse = (t - start) / (1 - start);
         g.scale.setScalar(Math.max(0.03, 1 - collapse * 0.95));
         g.position.y -= collapse * 0.35;
@@ -1108,6 +1115,8 @@ export class World {
   private clearGroup(group: THREE.Group) {
     group.traverse((o) => {
       if (o instanceof THREE.Mesh || o instanceof THREE.Line) {
+        // Character parts belong to the shared library.
+        if (o.userData.shared) return;
         o.geometry.dispose();
         const index = this.geometries.indexOf(o.geometry);
         if (index >= 0) this.geometries.splice(index, 1);
@@ -1367,6 +1376,12 @@ export class World {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
   }
+  /** Soldiers breathe and shift while idle only at full quality (it redraws every frame). */
+  private idleMotion() {
+    return (
+      this.quality === 'normal' && !this.reduced && !!this.characters && this.unitModels.size > 0
+    );
+  }
   private animate = () => {
     if (this.disposed) return;
     this.frame = requestAnimationFrame(this.animate);
@@ -1375,13 +1390,19 @@ export class World {
     this.controls.update();
     this.renderTime += delta;
     if (this.renderTime < FRAME_BUDGET) return;
-    if (!this.needsDraw && !this.visual) {
+    const idle = this.idleMotion();
+    if (!this.needsDraw && !this.visual && !idle) {
       this.renderTime = 0;
       return;
     }
     const dt = Math.min(this.renderTime, 0.08);
     this.renderTime = 0;
     this.tickVisual(dt);
+    if (this.visual || idle) {
+      for (const g of [...this.unitModels.values(), ...(this.visual?.ghosts ?? [])])
+        (g.userData.character as Character | undefined)?.update(dt);
+      this.renderer.shadowMap.needsUpdate = true;
+    }
     this.controls.target.x = THREE.MathUtils.clamp(this.controls.target.x, -31, 31);
     this.controls.target.z = THREE.MathUtils.clamp(this.controls.target.z, -23, 23);
     this.controls.update();

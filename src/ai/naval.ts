@@ -30,6 +30,7 @@ import {
   type TravelRoute,
   visiblePathDestination,
 } from './exploration';
+
 const landingInfantry = (u: Unit) => UNITS[u.type].capture && u.type !== 'scout';
 const dist = (s: State, a: string, b: string) => distance(tileAt(s, a), tileAt(s, b));
 export function landRegions(s: State): Map<string, string> {

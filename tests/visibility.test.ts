@@ -20,6 +20,7 @@ import {
   refreshKnowledge,
 } from '../src/game/visibility';
 import { loadGame, parseSave, SAVE_KEY } from '../src/persistence/save';
+
 function apply(s: State, c: Command) {
   const r = execute(s, c);
   assert.equal(r.error, undefined, r.error);

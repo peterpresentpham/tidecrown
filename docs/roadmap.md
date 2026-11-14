@@ -15,7 +15,7 @@ Game chiến thuật 3D theo lượt, chơi đơn trên web: một thành/một 
 - Chiến đấu xác định: sát thương theo HP, vùng khống chế, giữ trận/dựng thương/ngắm bắn, Nghỉ, vây thành, tháp/tường; vận tải và đổ bộ.
 - AI dùng observation như người chơi: khám phá, phát triển, đội hình bộ, hải quân.
 - Đi–đánh một lần bấm, dự báo hai phía, hoàn tác bước đi, vùng nguy hiểm, tóm tắt lượt AI; cảm ứng chọn rồi xác nhận.
-- Mô hình low-poly cho đủ quân/công trình, hoạt ảnh hành động, ba mức đồ họa, tốc độ AI Nhanh.
+- Mô hình 3D CC0 (Quaternius, Kenney): lính tỷ lệ người thật có xương và animation (đi, đánh, trúng đòn, chết), ngựa, máy, tàu, thành, nhà, cây, núi; ba mức đồ họa, tốc độ AI Nhanh.
 - Lưu cục bộ schema 8; cây công nghệ dạng làn theo nhánh, có lộ trình và chỉ số quân được mở.
 
 Chưa được kiểm chứng bằng người chơi thật: thời lượng ván, độ khó, khả năng nhận dạng quân, điện thoại thật.
@@ -66,7 +66,14 @@ Kèm theo: hàng đợi nghiên cứu theo lộ trình đã chọn (hiện mỗi
 - Bảng tuyển chỉ hiện quân tuyển được ngay và 1–2 quân sắp mở.
 - Hiện lợi thế khắc chế trong dự báo giao chiến (ví dụ "Giáo +3 vs kỵ").
 
-### 4. Sức khỏe code
+### 4. Đồ họa
+
+- Gói miễn phí chỉ có hai trang phục (Ranger, Peasant): nhiều quân trông giống nhau, phân biệt chủ yếu bằng mũ/vũ khí. Có thể mua bản Source để thêm trang phục.
+- Chưa có animation kéo cung/nỏ; cung thủ dùng tư thế ngắm thay thế.
+- Hậu kỳ nhẹ cho mức Đầy đủ: SSAO/N8AO, bloom nhẹ, chỉnh màu.
+- Mặt đất liền khối có chuyển màu giữa loại đất; nước có sóng và bọt bờ động.
+
+### 5. Sức khỏe code
 
 - Tách `src/game/engine.ts` theo hệ thống: di chuyển, chiến đấu, kinh tế, thành, lượt.
 - AI kiểm tra lệnh bằng `execute()` (clone toàn bộ state); tách hàm validate không clone.

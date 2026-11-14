@@ -20,6 +20,7 @@ import { observe, refreshKnowledge, rememberCity } from '../src/game/visibility'
 import { parseSave } from '../src/persistence/save';
 import { balanceCampaign, OPENINGS } from './helpers/balanceCampaign';
 import { tacticalScenario, troop } from './helpers/tacticalScenarios';
+
 const apply = (s: State, c: Command) => {
   const r = execute(s, c);
   assert.equal(r.error, undefined, JSON.stringify(c) + ': ' + r.error);

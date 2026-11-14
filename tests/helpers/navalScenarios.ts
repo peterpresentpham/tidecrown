@@ -2,6 +2,7 @@ import { TECHNOLOGIES, type TechnologyId } from '../../src/data/technologies';
 import { createClassicGame, type State } from '../../src/game/engine';
 import { emptyKnowledge, refreshKnowledge } from '../../src/game/visibility';
 import { troop } from './tacticalScenarios';
+
 export function navalScenario(): State {
   const s = createClassicGame();
   s.turn = 'enemy';

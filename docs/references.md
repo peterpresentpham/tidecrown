@@ -50,4 +50,4 @@ Nguồn bổ trợ về thiết kế công nghệ: [Age of Empires II — Milita
 
 Nghiên cứu ban đầu ngày 13/11/2026 không phải thử chơi trực tiếp. Chưa xác nhận toàn bộ luật, công thức sát thương, AI, vận tải hoặc generator của Tribal Forts. Các mô tả phiên bản cửa hàng ở phần trên là ảnh chụp thông tin tại ngày nghiên cứu, không phải xác nhận mới.
 
-Ảnh/link chỉ phục vụ nghiên cứu; asset sản phẩm phải tự tạo hoặc có giấy phép phù hợp. Không lấy model, icon, âm thanh hay mã nguồn game tham khảo. Luật hiện hành ở [gameplay.md](gameplay.md); phạm vi ở [roadmap.md](roadmap.md). Các ý tưởng sơ khai lục giác, ba tài nguyên, tiếp viện/phong tỏa và ba mục tiêu đã bị bỏ khỏi thiết kế.
+Ảnh/link chỉ phục vụ nghiên cứu; asset sản phẩm phải tự tạo hoặc có giấy phép phù hợp. Mô hình 3D hiện dùng các gói CC0 của Quaternius và Kenney (danh sách ở [kiến trúc](architecture.md#mô-hình-3d)). Không lấy model, icon, âm thanh hay mã nguồn game tham khảo. Luật hiện hành ở [gameplay.md](gameplay.md); phạm vi ở [roadmap.md](roadmap.md). Các ý tưởng sơ khai lục giác, ba tài nguyên, tiếp viện/phong tỏa và ba mục tiêu đã bị bỏ khỏi thiết kế.

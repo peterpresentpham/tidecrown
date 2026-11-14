@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { healingPressure, pursuit } from './v2/healing';
+
 test('sustained ranged pressure beats field rest; crossbows and siege break a resting town defender', () => {
   for (const type of ['archer', 'crossbow', 'catapult'] as const) {
     const r = healingPressure(type);

@@ -2,6 +2,7 @@
 import js from '@eslint/js';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import prettierConfig from 'eslint-config-prettier';
+import importX from 'eslint-plugin-import-x';
 import reactHooks from 'eslint-plugin-react-hooks';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import globals from 'globals';
@@ -17,7 +18,7 @@ export default defineConfig([
   // Quy tắc chung cho mọi file TS/JS
   {
     files: ['**/*.{ts,tsx,mts,mjs}'],
-    plugins: { 'simple-import-sort': simpleImportSort },
+    plugins: { 'simple-import-sort': simpleImportSort, 'import-x': importX },
     rules: {
       '@typescript-eslint/no-unused-vars': [
         'warn',
@@ -26,6 +27,11 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
+      // Khối import cách phần code phía sau đúng một dòng trống
+      'import-x/newline-after-import': [
+        'error',
+        { count: 1, exactCount: true, considerComments: true },
+      ],
       'no-console': ['warn', { allow: ['debug', 'warn', 'error'] }],
       'no-debugger': 'warn',
       eqeqeq: ['error', 'always', { null: 'ignore' }],

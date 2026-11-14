@@ -5,6 +5,7 @@ import { type Command, execute, type FactionId, type State, UNITS } from '../src
 import { observe } from '../src/game/visibility';
 import { World } from '../src/render/World';
 import { navalScenario } from './helpers/navalScenarios';
+
 const SCENARIOS = { convoy: 'Vận tải và hộ tống qua biển' } as const;
 const host = document.getElementById('world')!,
   result = document.getElementById('result')!,

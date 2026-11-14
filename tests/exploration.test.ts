@@ -13,6 +13,7 @@ import {
   UNITS,
 } from '../src/game/engine';
 import { isVisible, observe, refreshKnowledge } from '../src/game/visibility';
+
 function arena(type: Unit['type'] = 'clubman') {
   const s = createClassicGame();
   s.turn = 'enemy';

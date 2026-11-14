@@ -1,5 +1,6 @@
 import type { City, FactionId, GridPoint, Terrain, Tile } from './engine';
 import type { GameSettings } from './map';
+
 const key = (p: GridPoint) => `${p.q},${p.r}`;
 const distance = (a: GridPoint, b: GridPoint) => Math.max(Math.abs(a.q - b.q), Math.abs(a.r - b.r));
 /** Two connected shores separated by a three-tile channel. No land/corner route

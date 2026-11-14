@@ -19,6 +19,7 @@ import {
   upgradeCost,
 } from '../src/game/engine';
 import { BACKUP_KEY, loadGame, parseSave, SAVE_KEY } from '../src/persistence/save';
+
 const apply = (s: State, c: Command) => {
   const r = execute(s, c);
   assert.equal(r.error, undefined, r.error);

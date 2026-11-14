@@ -11,6 +11,7 @@ import {
   UNITS,
 } from './engine';
 import { observe } from './visibility';
+
 export type AttackPlan = {
   actor: string;
   target: string;

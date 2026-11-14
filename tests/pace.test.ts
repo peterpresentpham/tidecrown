@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { createGame, distance, tileAt } from '../src/game/engine';
 import { observe } from '../src/game/visibility';
 import { paceCampaign } from './helpers/paceCampaign';
+
 test('30 fixed seeds meet opening pace without exposing enemies at spawn', () => {
   const rows = Array.from({ length: 30 }, (_, i) =>
     paceCampaign(`pace-${String(i).padStart(2, '0')}`, 1, 14)

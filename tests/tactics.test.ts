@@ -17,6 +17,7 @@ import {
 import { observe, refreshKnowledge } from '../src/game/visibility';
 import { parseSave } from '../src/persistence/save';
 import { finishAITurn, tacticalScenario, troop } from './helpers/tacticalScenarios';
+
 const apply = (s: State, c: Command) => {
   const r = execute(s, c);
   assert.equal(r.error, undefined, JSON.stringify(c));

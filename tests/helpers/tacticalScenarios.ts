@@ -10,6 +10,7 @@ import {
   type UnitType,
 } from '../../src/game/engine';
 import { emptyKnowledge, refreshKnowledge } from '../../src/game/visibility';
+
 export const SCENARIOS = {
   screen: 'Cung sau bộ binh',
   focus: 'Tập trung hỏa lực',

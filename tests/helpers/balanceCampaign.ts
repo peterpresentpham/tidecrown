@@ -25,6 +25,7 @@ import {
 } from '../../src/game/engine';
 import { isVisible, observe } from '../../src/game/visibility';
 import { parseSave } from '../../src/persistence/save';
+
 export const OPENINGS = ['expansion', 'economy', 'pressure'] as const;
 export type Opening = (typeof OPENINGS)[number];
 export const OPENING_LABELS: Record<Opening, string> = {

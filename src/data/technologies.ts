@@ -1,5 +1,6 @@
 import type { Resource } from '../game/engine';
 import { BALANCE } from './balance';
+
 export const BRANCHES = {
   economy: 'Lương thực & hạ tầng',
   materials: 'Tài nguyên & luyện kim',

@@ -1,0 +1,129 @@
+.gallery {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  grid-template-rows: auto 1fr;
+  background: #0b161c;
+}
+.gallery-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 10px 16px;
+  background: var(--glass);
+  border-bottom: 1px solid #ffffff1a;
+  z-index: 2;
+}
+.gallery-bar h1 {
+  margin: 0;
+  font-size: 17px;
+}
+.gallery-back {
+  color: var(--gold);
+  text-decoration: none;
+  font-size: 14px;
+}
+.gallery-tabs {
+  display: flex;
+  gap: 4px;
+  margin-right: auto;
+}
+.gallery-tabs button,
+.gallery-actions button,
+.gallery-list button,
+.gallery-overview {
+  padding: 7px 12px;
+  border-radius: 8px;
+  background: #ffffff12;
+  font-size: 14px;
+}
+.gallery-tabs button:hover,
+.gallery-actions button:hover,
+.gallery-list button:hover,
+.gallery-overview:hover {
+  background: #ffffff24;
+}
+.gallery-tabs button.active,
+.gallery-list button.active {
+  background: var(--blue);
+}
+.gallery-bar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #c9d1d6;
+}
+.gallery select {
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #ffffff2a;
+  background: #0f1e26;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+.gallery-side {
+  overflow-y: auto;
+  padding: 12px;
+  background: #101e26;
+  border-right: 1px solid #ffffff14;
+  z-index: 1;
+}
+.gallery-side h2 {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9fb0b9;
+}
+.gallery-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.gallery-list button {
+  width: 100%;
+  text-align: left;
+}
+.gallery-actor {
+  width: 100%;
+  margin-bottom: 14px;
+}
+.gallery-actions {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.gallery-overview {
+  width: 100%;
+}
+.gallery-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #9fb0b9;
+}
+.gallery-world {
+  position: relative;
+  overflow: hidden;
+}
+@media (max-width: 720px) {
+  .gallery {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+  .gallery-side {
+    grid-row: 3;
+    max-height: 34vh;
+    border-right: 0;
+    border-top: 1px solid #ffffff14;
+  }
+  .gallery-list {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}

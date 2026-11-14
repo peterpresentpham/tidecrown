@@ -4,6 +4,7 @@ import test from 'node:test';
 import { advanceAttack, planAttack } from '../src/game/actionPlan';
 import { createClassicGame, type Unit, UNITS } from '../src/game/engine';
 import { refreshKnowledge } from '../src/game/visibility';
+
 function fixture() {
   const s = createClassicGame();
   s.cities = [];

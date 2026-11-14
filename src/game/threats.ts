@@ -11,6 +11,7 @@ import {
   UNITS,
 } from './engine';
 import { isVisible, observe } from './visibility';
+
 /** Conservative public estimate, not a promise that unmarked tiles are safe. */
 export function visibleThreats(raw: State) {
   const s = observe(raw, 'player'),

@@ -7,6 +7,7 @@ import { refreshKnowledge } from '../src/game/visibility';
 import { World } from '../src/render/World';
 import { requiresConfirmation, TapGesture } from '../src/ui/interaction';
 import { troop } from './helpers/tacticalScenarios';
+
 const pointer = (pointerId: number, clientX = 0, clientY = 0) => ({
   pointerId,
   clientX,

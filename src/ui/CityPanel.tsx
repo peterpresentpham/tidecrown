@@ -26,6 +26,7 @@ import {
 } from '../game/engine';
 import { commandBlock, improvementAvailability } from './actionReasons';
 import { iconFor } from './UnitIcon';
+
 export function CityPanel({
   state,
   city,

@@ -10,6 +10,7 @@ import {
 } from '../../src/game/engine';
 import { refreshKnowledge } from '../../src/game/visibility';
 import { troop } from '../helpers/tacticalScenarios';
+
 export function healingPressure(attacker: UnitType, city = false) {
   let s = createClassicGame();
   for (const t of s.tiles) t.terrain = 'grass';

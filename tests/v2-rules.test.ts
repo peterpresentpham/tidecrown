@@ -20,6 +20,7 @@ import { moveUndo, undoMove } from '../src/game/undo';
 import { observe, refreshKnowledge } from '../src/game/visibility';
 import { parseSave } from '../src/persistence/save';
 import { troop } from './helpers/tacticalScenarios';
+
 function fixture() {
   const s = createClassicGame();
   for (const t of s.tiles) {

@@ -3,6 +3,7 @@ import { observe } from '../../src/game/visibility';
 import { World } from '../../src/render/World';
 import type { AISpeed, GraphicsQuality } from '../../src/ui/playbackPolicy';
 import { battle60Fixture } from '../helpers/perfFixture';
+
 const frame = () => new Promise<number>(requestAnimationFrame);
 export async function playbackBenchmark(host: HTMLElement) {
   const samples = [];

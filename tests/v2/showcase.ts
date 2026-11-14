@@ -2,6 +2,7 @@ import { BUILDINGS, createGame, UNITS, type UnitType } from '../../src/game/engi
 import { emptyKnowledge, refreshKnowledge } from '../../src/game/visibility';
 import { World } from '../../src/render/World';
 import { battle60Fixture } from '../helpers/perfFixture';
+
 const host = document.getElementById('world')!,
   result = document.getElementById('result')!;
 let world: World | undefined;
