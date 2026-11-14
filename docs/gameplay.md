@@ -1,19 +1,17 @@
-# Hướng dẫn chơi và luật hiện hành
+# Cách chơi và luật hiện hành
 
-Game chiến thuật 3D theo lượt, chạy cổng 3010. Bản này có cây 45 công nghệ không khóa loại trừ, 23 loại quân, công trình/cải tạo lãnh thổ và hoạt ảnh hành động nhẹ. Bản đồ, sương mù, thiết lập Dễ/Vừa/Khó và 1–3 AI tiếp tục được giữ.
-
-Nhịp khai cuộc: [bước 1 — Nhịp khai cuộc và AI khám phá](reports/step1-pace.md). Map mới có làng/hành lang trung tâm; muốn dùng bố trí mới hãy bắt đầu ván mới. AI dùng đường hợp lệ với số bước của từng quân và trinh sát ưu tiên khám phá thay vì phá tường. UI tốc độ nhanh và chất lượng thấp đã ghép; xem [báo cáo UI/hiệu năng](reports/step5-ui-performance.md).
+Cập nhật 14/11/2026. Game chiến thuật 3D theo lượt: 45 công nghệ không khóa loại trừ, 23 loại quân, công trình/cải tạo lãnh thổ, sương mù, Dễ/Vừa/Khó và 1–3 AI. Số liệu thực thi nằm trong `src/data` và `src/game/engine.ts`; tài liệu này giải thích luật.
 
 ## Vào chơi
 
-Chưa có ván lưu: chọn độ khó, số AI, kiểu Đất liền/Hai bờ biển và mã bản đồ. Có ván lưu: tiếp tục ngay. Menu → Ván mới để đổi cấu hình; chỉ thay ván khi bấm Bắt đầu. Bản 0.7.0 bắt đầu ván mới, không chuyển schema cũ. Điều kiện và giao diện hiện hành xem [công nghệ](technology.md).
+Chưa có ván lưu: chọn độ khó, số AI, kiểu Đất liền/Hai bờ biển và mã bản đồ. Có ván lưu: tiếp tục ngay. Menu → Ván mới để đổi cấu hình; chỉ thay ván khi bấm Bắt đầu. Save schema cũ không được chuyển; đổi schema thì bắt đầu ván mới. Điều kiện và giao diện hiện hành xem [công nghệ](technology.md).
 
 Quân xanh lam/phù hiệu BẠN là quân mình; đối thủ đỏ/lục/vàng. Khởi đầu một thành và một lính chùy, 20 vàng/16 lương/5 gỗ/12 đá. Bản đồ ngẫu nhiên 33 × 25 ô, 9/12/15 thành/làng. Phe mất hết thành bị loại; người chơi thắng khi loại hết AI.
 
 ## Vòng chơi
 
 1. Chọn quân và ô xanh để đi, tiến gần vùng đen để mở bản đồ. Làng trống chiếm bằng bộ/kỵ binh đứng kề.
-2. Mở sách để xem cây lớn, tìm công nghệ hoặc chọn đơn vị làm mục tiêu. Trinh sát là nghiên cứu gốc rẻ/nhanh để tìm làng và địch.
+2. Mở sách để xem cây công nghệ; tìm theo tên công nghệ, quân hoặc công trình, chọn một nút để xem lộ trình cần học. Trinh sát là nghiên cứu gốc rẻ/nhanh để tìm làng và địch.
 3. Nghiên cứu chỉ mở quyền sử dụng. Chọn thành → Quân đội để tuyển; quân chuyên môn còn cần cơ sở như lò rèn, chuồng ngựa, xưởng hoặc cảng.
 4. Thành → Công trình để xây và nâng; Lãnh thổ để chọn cải tạo rồi chọn ô vàng hợp lệ. Thu tài nguyên tự động, mỗi thành một công trình/cải tạo mỗi lượt.
 5. Chọn quân chuyên môn để thấy hành động: giữ trận, dựng thương, ngắm bắn, triển khai/thu máy, chữa, sửa, lên/xuống tàu hoặc nâng loại.
@@ -24,7 +22,7 @@ Rừng/đồi tốn hai bước; kiểm lâm đi rừng một bước; đường
 
 ## Điều khiển
 
-Click mô hình/phù hiệu để chọn, click ô xanh để đi, click mục tiêu đỏ để đánh/chiếm. Kéo nền để pan, cuộn hoặc +/− để zoom, Q/E xoay; nút tâm ngắm về quân mình. Cây nghiên cứu có cuộn, tìm kiếm, lọc, đường nối có mũi tên, màu trạng thái và làm sáng toàn bộ chuỗi điều kiện khi chọn công nghệ. Nút Chỉ xem đường này gom riêng các điều kiện cần học. Escape hủy hành động đang chọn hoặc đóng bảng. Giao diện quản lý chỉ mở khi được chọn.
+Click mô hình/phù hiệu để chọn, click ô xanh để đi, click mục tiêu đỏ để đánh/chiếm. Kéo nền để pan, cuộn hoặc +/− để zoom, Q/E xoay; nút tâm ngắm về quân mình. Cây công nghệ chia làn theo nhánh; chọn một công nghệ làm sáng toàn bộ chuỗi điều kiện và liệt kê lộ trình theo thứ tự (xem [công nghệ](technology.md#giao-diện-cây-công-nghệ)). Escape hủy hành động đang chọn hoặc đóng bảng. Giao diện quản lý chỉ mở khi được chọn.
 
 ## Thiết lập và bản đồ
 
@@ -42,7 +40,7 @@ Thứ tự lam → đỏ → lục → vàng, bỏ qua phe đã bị loại. M�
 
 Thành hỗ trợ nhiều công trình. Có 14 công trình thuộc nhóm kinh tế, quân sự và phòng thủ. Mỗi thành có 2 + cấp thành chỗ kinh tế và 2 + cấp thành chỗ quân sự. Tường/tháp dùng nhóm phòng thủ riêng. Lò rèn → lò sắt → xưởng thép dùng chung một chỗ; cảng → xưởng đóng tàu dùng chung một chỗ. Cơ sở nâng cao đáp ứng điều kiện của cơ sở trước.
 
-Mỗi thành xây hoặc cải tạo một lần/lượt. Nâng cấp kinh tế tăng thu nhập và chỗ xây, không tự thêm công sự. Tường riêng tăng giới hạn công sự từ 20 lên 40 và bổ sung 20 khi xây; tháp cần tường, bắn một quân đối địch đang nhìn thấy trong tầm 3 ở đầu lượt, duy trì thêm 1 vàng.
+Mỗi thành xây hoặc cải tạo một lần/lượt. Nâng cấp kinh tế tăng thu nhập và chỗ xây, không tự thêm công sự. Giới hạn công sự cấp 1/2/3 là 20/25/30; tường cộng thêm 20 và bổ sung 20 khi xây. Thành cấp 2–3 còn công sự bắn công 3, tầm 2 ở đầu lượt; tháp thay phát bắn thành bằng công 5/tầm 3, chỉ một phát mỗi thành mỗi lượt, duy trì thêm 1 vàng. Tường phản kích tối thiểu 2 HP khi bị cận chiến đánh, lấy mức cao hơn với phản kích đồn trú, không cộng hai lần; máy được miễn phản kích tường.
 
 Cải tạo ô: ruộng 3 lương, thâm canh 5, tưới 5 + số ruộng kề (tối đa +3), đồng cỏ 3; khai thác rừng 3 gỗ (+1 khi có Quản lý rừng), mỏ đồi 3 đá, mỏ đá 5. Ô chỉ đóng góp cho thành gần nhất trong bán kính 2, tránh đếm đôi vùng chồng lấn. Trồng rừng thay đổi địa hình thật. Thành làm việc trong vùng sở hữu; công binh có thể làm việc ở ô kề đang thấy, không có địch sát công trường.
 
@@ -50,13 +48,19 @@ Cải tạo ô: ruộng 3 lương, thâm canh 5, tưới 5 + số ruộng kề (
 
 Thành có thể nâng tới cấp 3. Xây thành mới tốn 45 vàng/20 lương/30 gỗ/15 đá, cần vị trí đã khảo sát hợp lệ và hoàn tất vào lượt sau. Sửa thành tốn 5 vàng/5 đá, hồi **2 công sự**, giới hạn theo lượt và công sự tối đa. Giá hiện hành lấy từ [balance.ts](../src/data/balance.ts), [buildings.ts](../src/data/buildings.ts) và [engine.ts](../src/game/engine.ts).
 
-Ba hướng mở đầu đã mô phỏng: mở rộng/trinh sát, kinh tế rồi quân, quân sớm. Các kết quả và ván kéo dài nằm trong [báo cáo cân bằng](reports/step4-balance.md); mục tiêu thời lượng 25–40 phút chưa được nghiệm thu bằng người chơi thật.
+Thời lượng ván chưa được nghiệm thu bằng người chơi thật; vấn đề ván kéo dài và cách đo ghi trong [lộ trình](roadmap.md#vấn-đề-đã-biết).
 
 ## Chiến đấu
 
-Di chuyển và đánh là lệnh riêng; quân còn quyền hành động có thể đi rồi đánh theo luật từng loại. Preview và thực thi dùng cùng phép tính. Quân sống sót có thể phản kích trong điều kiện hợp lệ; sát thương bản hiện tại xác định, không có gieo xúc xắc hoặc giảm sức đánh theo tỷ lệ HP. Cận chiến có khả năng chiếm mới chiếm được thành hết công sự và không còn quân giữ. Máy, công binh và tàu không tự chiếm.
+Chọn mục tiêu trong khả năng đi–đánh để tự đi tới vị trí hợp lệ rồi đánh/chiếm; chuỗi dừng nếu lộ địch mới hoặc dự báo xấu đi. Engine vẫn thực thi từng bước và đòn đánh riêng. Máy không vừa đi vừa bắn. Preview và thực thi dùng cùng phép tính. Quân sống sót có thể phản kích trong điều kiện hợp lệ; sát thương xác định: lấy sát thương sau giáp/địa hình/tư thế rồi nhân `0.6 + 0.4 × HP/HP tối đa`, làm tròn, tối thiểu 1. Phản kích dùng HP sau khi trúng đòn. Phá công sự dùng cùng hệ số; không gieo xúc xắc. Cận chiến có khả năng chiếm mới chiếm được thành hết công sự và không còn quân giữ. Máy, công binh và tàu không tự chiếm.
 
-Kỹ năng, xung phong, xuyên giáp, giữ trận, triển khai, chữa/sửa và nâng quân ở [units.md](units.md). Không thêm luật v2 vào bản hiện tại chỉ vì xuất hiện trong đề xuất.
+Kỹ năng, xung phong, xuyên giáp, giữ trận, triển khai, chữa/sửa và nâng quân ở [units.md](units.md). Giữ các lợi thế có điều kiện (đồi, giáo chống kỵ, kiếm chống bộ, xung phong bị dựng thương chặn); không cộng thêm một tầng chí mạng ngẫu nhiên.
+
+Vùng khống chế gồm tám ô kề quân cận chiến có vũ khí, đang thấy, cùng môi trường bộ/biển. Đi vào vùng này dùng hết bước còn lại nhưng giữ quyền đánh; được rời vùng từ ô xuất phát. Rừng bỏ khống chế của kỵ binh. Quân trên tàu và quân bắn xa không khống chế. Khi lộ quân kiểm soát mới giữa đường, lệnh đi dừng tại ô vừa vào.
+
+**Nghỉ:** quân bị thương chưa đi/hành động, không kề địch, không trên tàu và không thiếu tiếp tế hồi 2 HP (3 tại thành mình), dùng hành động. Nghỉ không cộng thêm hồi thành thụ động vào lượt kế tiếp; Paladin vẫn là lệnh hỗ trợ riêng, mọi hồi máu bị chặn tại HP tối đa.
+
+**Vây thành:** ít nhất hai quân địch bộ có vũ khí chiếm ít nhất nửa số ô đất tiếp cận quanh thành; cần ít nhất hai ô đất có thể tiếp cận. Sản lượng giảm 50%, áp dụng trước hệ số ổn định. Không tự vây bởi tập ô rỗng, núi/nước hoặc chỉ tàu. Không thêm tiêu hao HP hay phí chiếm thành.
 
 ## Sương mù và khám phá
 
@@ -74,18 +78,22 @@ Cảng chỉ xây tại thành kề nước; tàu tuyển trên ô nước trố
 
 Tàu vận tải có 6 chỗ: bộ thường 1, quân nặng/kỵ 2, máy 3. Lên tàu dùng hành động của quân còn bước, cần tàu cùng phe kề bên. Quân trên tàu không chiếm ô riêng, không tự mở thêm tầm nhìn và không lộ danh sách cho đối thủ chỉ vì thấy tàu. Tàu đi thì hành khách đi theo. Đổ bộ cần ô bờ trống kề tàu, dùng hết lượt; chưa có Chiến thuật đổ bộ thì chịu -1 giáp cho tới đầu lượt sau. Tàu chìm thì quân trên tàu mất theo.
 
-Trên Hai bờ biển, thủ phủ ven nước xây được cảng. Học Chế biến gỗ → Hàng hải → Tàu vận tải, xây cảng, tuyển tàu và quân chiếm đất. Lên tàu từ ô kề, đi tới bờ đối diện, đổ bộ vào ô trống hợp lệ rồi chiếm thành từ lượt sau. Thành trung lập/địch không phải bãi đổ bộ. AI có trinh sát, vận tải, hộ tống, chọn bãi và quay về đón quân; bằng chứng ở [báo cáo hải quân](reports/step3-navy.md).
+Trên Hai bờ biển, thủ phủ ven nước xây được cảng. Học Chế biến gỗ → Hàng hải → Tàu vận tải, xây cảng, tuyển tàu và quân chiếm đất. Lên tàu từ ô kề, đi tới bờ đối diện, đổ bộ vào ô trống hợp lệ rồi chiếm thành từ lượt sau. Thành trung lập/địch không phải bãi đổ bộ. AI có trinh sát, vận tải, hộ tống, chọn bãi và quay về đón quân.
 
 ## Giao diện và hiệu năng
 
-Menu có **Lượt AI: Bình thường/Nhanh** và **Đồ họa: Đầy đủ/Thấp**, đổi tại chỗ và giữ thiết lập sau reload. Nhanh chỉ rút trình bày AI, không bỏ lệnh hoặc thay luật. Thấp giảm DPR, bóng và trang trí; giữ quân/công trình/fog. Giảm chuyển động ưu tiên theo hệ điều hành.
+Menu có **Lượt AI: Bình thường/Nhanh** và **Đồ họa: Đầy đủ/Vừa/Thấp**, đổi tại chỗ và giữ thiết lập sau reload. Nhanh chỉ rút trình bày AI, không bỏ lệnh hoặc thay luật. Thấp giảm DPR, bóng và trang trí; giữ quân/công trình/fog. Giảm chuyển động ưu tiên theo hệ điều hành.
 
 Bảng thành/hành động ghi điều kiện thiếu. Lên/xuống tàu hoặc hỗ trợ tô đích hợp lệ màu vàng. Menu đóng bảng quản lý để tránh che thao tác trên màn hẹp. Hoạt ảnh đi/đánh/bắn/trúng/chết/chữa/sửa dựa trên event hành động; quân đứng yên không có vòng idle liên tục.
 
+Quân có HP số, ký hiệu phe ●/▲/■/◆, dự báo hai phía và đường đi vàng. Cảm ứng chọn rồi xác nhận; chuột có thể bật cùng cách thao tác trong Menu. Hoàn tác chỉ bước đi gần nhất, không đổi knowledge/quân địch thấy được, không có lệnh khác chen vào; không lưu snapshot hay lệnh chờ qua reload. Vùng nguy hiểm chỉ ước lượng từ địch đang thấy, không bảo đảm ô khác an toàn. Tóm tắt giữ tối đa 12 sự kiện giao chiến/đổ bộ đã quan sát, focus theo vị trí sự kiện.
+
+Zoom xa chuyển sang ký hiệu chiến lược. Thấp giữ hình dạng/vũ khí/công trình, tắt bóng và bớt trang trí; Vừa giữ trang trí nhưng không bóng, DPR 1; Đầy đủ bật bóng, DPR tối đa 1.5. Renderer chỉ dựng hình học từ observation/ký ức và gộp hình tĩnh bằng màu đỉnh.
+
 ## Lưu và tiếp tục
 
-Schema 7: `nation-tech-v7`, backup `nation-tech-v7-backup`; tùy chọn UI lưu riêng ở `nation-ui-preferences-v1`. Không chuyển schema cũ trong giai đoạn phát triển. Save được kiểm tra trước khi render; dữ liệu lỗi được giữ dự phòng, tự lưu bị tắt nếu không thể bảo vệ bản cũ. Ván mới chỉ thay ván khi bấm Bắt đầu. Lưu/đọc cùng phiên bản vẫn phải đúng lượt, quân, tài nguyên, nghiên cứu và fog.
+Schema 8: `nation-tech-v8`, backup `nation-tech-v8-backup`; tùy chọn UI lưu riêng ở `nation-ui-preferences-v1`. Không chuyển schema cũ trong giai đoạn phát triển. Save được kiểm tra trước khi render; dữ liệu lỗi được giữ dự phòng, tự lưu bị tắt nếu không thể bảo vệ bản cũ. Ván mới chỉ thay ván khi bấm Bắt đầu. Lưu/đọc cùng phiên bản vẫn phải đúng lượt, quân, tài nguyên, nghiên cứu và fog.
 
 ## Trạng thái và giới hạn
 
-Phần tính năng trong phạm vi 1.0 đã có; [roadmap.md](roadmap.md) là nguồn tiến độ/nghiệm thu. Chưa có âm thanh, multiplayer, chiến dịch cốt truyện hoặc deploy công khai. Không tuyên bố clone đầy đủ luật Tribal Forts. Playtest thời lượng, người dùng 10 phút và thiết bị yếu hơn còn chờ; [báo cáo hiệu năng](reports/step5-ui-performance.md) ghi các số đo máy hiện tại.
+Chưa có âm thanh, multiplayer, chiến dịch cốt truyện hoặc phát hành công khai. Không tuyên bố sao chép đầy đủ luật Tribal Forts. Thời lượng ván, độ khó và điện thoại thật chưa được kiểm chứng bằng người chơi; việc tiếp theo ở [lộ trình](roadmap.md).

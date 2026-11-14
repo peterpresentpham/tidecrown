@@ -1,0 +1,11 @@
+package-lock.json
+node_modules
+dist
+coverage
+.eslintcache
+
+# Ảnh chụp, trace và số đo sinh ra bởi script, không format tay
+artifacts
+
+# Tài liệu viết tay: giữ nguyên định dạng bảng markdown và JSON số đo
+docs

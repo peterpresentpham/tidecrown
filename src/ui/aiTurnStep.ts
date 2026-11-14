@@ -1,5 +1,5 @@
-import { execute, type State } from '../game/engine';
 import { nextAICommand } from '../ai/ai';
+import { execute, type State } from '../game/engine';
 
 /**
  * Exactly one AI command per call, always through the shared `execute`. An illegal AI command
@@ -11,7 +11,7 @@ export function runAIStep(state: State): State {
 }
 
 /** A cleared timeout may already be queued. Never apply it to a replaced game. */
-export function runScheduledAIStep(current:State,scheduled:State):State{
-  if(current!==scheduled||current.turn==='player'||current.winner)return current;
+export function runScheduledAIStep(current: State, scheduled: State): State {
+  if (current !== scheduled || current.turn === 'player' || current.winner) return current;
   return runAIStep(current);
 }

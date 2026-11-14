@@ -1,16 +1,102 @@
 /* Inline "why unavailable" lines for city management and unit actions. */
-.city-card small.reason,.recruit-list>button>div>small.reason{color:#e9c97f;line-height:1.45}
-.build-list>button:disabled,.recruit-list>button:disabled{opacity:.72;cursor:default}
-.build-list>button:disabled strong{color:#b9c2b4}
-.unit-actions .action-block{font-size:10px;color:#e9c97f;padding:2px 4px;line-height:1.4}
+.city-card small.reason,
+.recruit-list > button > div > small.reason {
+  color: #e9c97f;
+  line-height: 1.45;
+}
+.build-list > button:disabled,
+.recruit-list > button:disabled {
+  opacity: 0.72;
+  cursor: default;
+}
+.build-list > button:disabled strong {
+  color: #b9c2b4;
+}
+.unit-actions .action-block {
+  font-size: 10px;
+  color: #e9c97f;
+  padding: 2px 4px;
+  line-height: 1.4;
+}
 /* Keep feedback in a separate lane between the active management card and HUD. */
-.managing-city .city-card{bottom:132px;max-height:calc(100dvh - 235px)}
-.managing-city .status-line,.managing-city .status-line.notification{display:flex;bottom:91px;left:20px;max-width:calc(100% - 40px);max-height:32px;overflow:hidden}
-.managing-city .unit-hud{display:none}
-.managing-city .bottom-hud{justify-content:flex-end}
-.small-menu{max-height:calc(100dvh - 95px);overflow:auto;overscroll-behavior:contain}
-@media(max-width:760px){.managing-city .city-card{bottom:145px;max-height:calc(100dvh - 275px)}.managing-city .status-line,.managing-city .status-line.notification{bottom:99px;left:14px;max-width:calc(100% - 28px)}}
-@media(max-width:500px){.managing-city .city-card{bottom:155px;max-height:calc(100dvh - 285px)}.managing-city .status-line,.managing-city .status-line.notification{bottom:115px;left:10px;max-width:calc(100% - 20px);font-size:10px}.unit-actions{max-height:calc(100dvh - 290px);overflow:auto;overscroll-behavior:contain}.unit-actions .action-block{flex-basis:100%}}
-@media(max-height:560px){.managing-city .city-card{bottom:112px;max-height:calc(100dvh - 190px)}.managing-city .status-line,.managing-city .status-line.notification{bottom:74px;max-height:28px}}
-.unit-action-option{display:flex;flex-direction:column;align-items:flex-start;gap:4px;max-width:230px}
-.unit-actions small.reason{font-size:10px;line-height:1.45;color:#e9c97f;max-width:230px}
+.managing-city .city-card {
+  bottom: 132px;
+  max-height: calc(100dvh - 235px);
+}
+.managing-city .status-line,
+.managing-city .status-line.notification {
+  display: flex;
+  bottom: 91px;
+  left: 20px;
+  max-width: calc(100% - 40px);
+  max-height: 32px;
+  overflow: hidden;
+}
+.managing-city .unit-hud {
+  display: none;
+}
+.managing-city .bottom-hud {
+  justify-content: flex-end;
+}
+.small-menu {
+  max-height: calc(100dvh - 95px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+@media (max-width: 760px) {
+  .managing-city .city-card {
+    bottom: 145px;
+    max-height: calc(100dvh - 275px);
+  }
+  .managing-city .status-line,
+  .managing-city .status-line.notification {
+    bottom: 99px;
+    left: 14px;
+    max-width: calc(100% - 28px);
+  }
+}
+@media (max-width: 500px) {
+  .managing-city .city-card {
+    bottom: 155px;
+    max-height: calc(100dvh - 285px);
+  }
+  .managing-city .status-line,
+  .managing-city .status-line.notification {
+    bottom: 115px;
+    left: 10px;
+    max-width: calc(100% - 20px);
+    font-size: 10px;
+  }
+  .unit-actions {
+    max-height: calc(100dvh - 290px);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  .unit-actions .action-block {
+    flex-basis: 100%;
+  }
+}
+@media (max-height: 560px) {
+  .managing-city .city-card {
+    bottom: 112px;
+    max-height: calc(100dvh - 190px);
+  }
+  .managing-city .status-line,
+  .managing-city .status-line.notification {
+    bottom: 74px;
+    max-height: 28px;
+  }
+}
+.unit-action-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 230px;
+}
+.unit-actions small.reason {
+  font-size: 10px;
+  line-height: 1.45;
+  color: #e9c97f;
+  max-width: 230px;
+}

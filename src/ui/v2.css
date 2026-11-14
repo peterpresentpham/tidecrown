@@ -1,0 +1,206 @@
+.combat-preview {
+  position: absolute;
+  left: 50%;
+  bottom: 150px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  background: #142735ed;
+  border: 1px solid #879d9d;
+  border-radius: 12px;
+  padding: 12px 18px;
+  color: #f0ead8;
+  pointer-events: none;
+  z-index: 15;
+}
+.combat-preview > div {
+  display: grid;
+  gap: 4px;
+  min-width: 110px;
+}
+.combat-preview small {
+  color: #b8c8cb;
+}
+@media (max-width: 600px) {
+  .combat-preview {
+    bottom: 190px;
+    max-width: 90vw;
+    padding: 8px;
+    gap: 10px;
+    font-size: 12px;
+  }
+  .combat-preview > div {
+    min-width: 100px;
+  }
+}
+
+.touch-confirm {
+  position: absolute;
+  bottom: 155px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 35;
+  background: #13263a;
+  padding: 12px;
+  border: 1px solid #78c9ff;
+  border-radius: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  max-width: 95vw;
+}
+.touch-confirm button,
+.undo-move,
+.ai-summary button {
+  min-height: 44px;
+  background: #254865;
+  color: white;
+  border: 1px solid #53718a;
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+.undo-move {
+  position: absolute;
+  left: 16px;
+  top: 120px;
+  z-index: 10;
+}
+.ai-summary {
+  position: absolute;
+  right: 18px;
+  top: 100px;
+  z-index: 12;
+  background: #152538ee;
+  border-radius: 8px;
+  padding: 8px;
+  max-width: 280px;
+  max-height: 35vh;
+  overflow: auto;
+}
+.ai-summary summary {
+  cursor: pointer;
+}
+.ai-summary button {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  font-size: 12px;
+}
+.touch-confirm ~ .combat-preview {
+  bottom: 220px;
+}
+@media (max-width: 700px) {
+  .touch-confirm {
+    bottom: 200px;
+  }
+  .ai-summary {
+    top: 145px;
+    right: 8px;
+    max-width: 220px;
+  }
+  .undo-move {
+    top: 140px;
+    font-size: 12px;
+  }
+}
+
+.world-labels.strategic .unit-marker span,
+.world-labels.strategic .unit-marker i {
+  display: none;
+}
+.world-labels.strategic .unit-marker:before {
+  content: attr(data-symbol);
+  font-size: 16px;
+  color: var(--faction-color);
+}
+.world-labels.strategic .unit-marker {
+  min-width: 24px;
+  padding: 3px;
+  background: #112333e8;
+}
+.world-labels.strategic .city-label {
+  font-size: 10px;
+}
+.build-preview {
+  position: absolute;
+  bottom: 150px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #182c3eee;
+  border: 1px solid #aa985b;
+  max-width: 330px;
+  padding: 12px;
+  border-radius: 10px;
+  pointer-events: none;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.touch-confirm + .build-preview {
+  bottom: 250px;
+}
+.danger-toggle {
+  position: absolute;
+  left: 16px;
+  top: 90px;
+  z-index: 10;
+  background: #233c50;
+  color: white;
+  border: 1px solid #597589;
+  border-radius: 7px;
+  padding: 9px;
+  min-height: 44px;
+}
+.undo-move {
+  top: 140px;
+}
+.danger-legend {
+  position: absolute;
+  left: 16px;
+  top: 190px;
+  max-width: 260px;
+  background: #15283bee;
+  padding: 7px;
+  z-index: 10;
+  pointer-events: none;
+}
+@media (max-width: 700px) {
+  .danger-toggle {
+    top: 135px;
+    font-size: 11px;
+  }
+  .undo-move {
+    top: 185px;
+  }
+  .danger-legend {
+    top: 235px;
+    width: 180px;
+    font-size: 10px;
+  }
+}
+
+.game-screen.confirming .combat-preview {
+  bottom: 245px;
+}
+.game-screen.confirming .build-preview {
+  bottom: 245px;
+}
+@media (max-width: 700px) {
+  .game-screen.confirming .combat-preview,
+  .game-screen.confirming .build-preview {
+    bottom: 320px;
+  }
+  .combat-preview {
+    max-width: calc(100vw - 24px);
+  }
+  .touch-confirm {
+    width: calc(100vw - 32px);
+    box-sizing: border-box;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .touch-confirm span {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+}

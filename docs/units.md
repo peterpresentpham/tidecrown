@@ -125,6 +125,12 @@ Nâng loại dùng các đường `UNIT_UPGRADES` trong [units.ts](../src/data/u
 
 Không dùng quan hệ khắc chế cứng “A luôn thắng B”. HP còn lại, số lượng, địa hình, vị trí, công nghệ và khả năng trả duy trì đều ảnh hưởng kết quả.
 
-## Bằng chứng kiểm tra
+## Luật chiến đấu áp dụng cho mọi quân
 
-`tests/units.test.ts` kiểm tra tuyển đủ 23 loại, giá/cơ sở, hành động và lưu/đọc; `tests/technology-roles.test.ts` kiểm tra vai trò của 45 công nghệ. [Báo cáo bộ binh](reports/step2-army-ai.md), [hải quân](reports/step3-navy.md) và [cân bằng](reports/step4-balance.md) tách scenario khỏi kết quả chiến dịch. Không khẳng định mọi ván AI sẽ tuyển đủ 23 loại.
+Chỉ số cơ bản trong bảng là đầu vào. Sát thương thực tế nhân hệ số HP sau phòng thủ, sàn 60%; phản kích dùng HP sau trúng đòn. Quân cận chiến tạo vùng khống chế cùng môi trường bộ/biển, trừ quân đang trên tàu. Nghỉ hồi 2 HP (3 tại thành mình) khi chưa hành động và không kề địch. Chi tiết ở [gameplay](gameplay.md#chiến-đấu).
+
+Mỗi loại có mô hình và vũ khí riêng; chân, bánh, vũ khí giữ pivot độc lập cho hoạt ảnh.
+
+## Kiểm tra
+
+`tests/units.test.ts` kiểm tra tuyển đủ 23 loại, giá/cơ sở, hành động và lưu/đọc; `tests/technology-roles.test.ts` kiểm tra vai trò của 45 công nghệ; `tests/tactics.test.ts` và `tests/naval.test.ts` kiểm tra AI bộ và hải quân theo scenario. Không khẳng định mọi ván AI sẽ tuyển đủ 23 loại.

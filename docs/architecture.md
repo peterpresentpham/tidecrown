@@ -1,63 +1,75 @@
-# Kiến trúc và hướng dẫn phát triển
+# Kiến trúc và phát triển
 
-Cập nhật theo code hiện tại ngày 14/11/2026. Game chơi đơn phía client: TypeScript, React, Vite, Three.js; phiên bản thư viện ở [package.json](../package.json). Không có backend, tài khoản hoặc hệ chống gian lận multiplayer.
+Cập nhật 14/11/2026. Game chơi đơn phía client: TypeScript, React, Vite, Three.js (phiên bản ở [package.json](../package.json)). Không có backend hoặc tài khoản.
 
-## Ranh giới thư mục
+## Thư mục
 
 | Nơi | Trách nhiệm |
 | --- | --- |
-| `src/game/engine.ts` | State, Command, thực thi, di chuyển, chiến đấu, kinh tế, công trình, lượt và kết quả |
-| `src/game/map.ts`, `waterMap.ts` | Sinh map có seed, thiết lập ván, kết nối và bố trí xuất phát |
-| `src/game/visibility.ts` | Tầm nhìn, ký ức địa hình/thành, observation riêng theo phe |
-| `src/game/research.ts` | Trạng thái nghiên cứu dùng chung UI và engine |
-| `src/data/` | 45 công nghệ, 23 quân, công trình/cải tạo, tham số cân bằng |
-| `src/ai/` | Điều phối lệnh, khám phá, mục tiêu/đội hình bộ, ngân sách và hải quân |
-| `src/render/World.ts`, `unitModels.ts` | Camera, picking, cảnh, mô hình, event/hoạt ảnh và vòng đời GPU |
-| `src/ui/` | HUD, thiết lập, quản lý thành/quân, cây nghiên cứu, tùy chọn và phát lượt AI |
-| `src/persistence/save.ts` | Parse/validate save schema 7, đọc localStorage và bảo vệ dữ liệu lỗi |
-| `tests/`, `scripts/` | Test luật, scenario, replay, bộ đo và kiểm tra UI/hiệu năng |
+| `src/game/engine.ts` | `State`, `Command`, `execute`: di chuyển, chiến đấu, kinh tế, công trình, lượt, kết quả |
+| `src/game/map.ts`, `waterMap.ts` | Sinh bản đồ theo mã, thiết lập ván, bố trí xuất phát |
+| `src/game/visibility.ts` | Tầm nhìn, ký ức địa hình/thành, `observe` riêng theo phe |
+| `src/game/research.ts` | Trạng thái nghiên cứu dùng chung cho engine và UI |
+| `src/game/actionPlan.ts` | Đi–đánh: lập kế hoạch từ observation, thực thi lại từng bước, dừng khi lộ địch mới |
+| `src/game/undo.ts` | Hoàn tác bước đi gần nhất: một snapshot, đối chiếu identity state và knowledge |
+| `src/game/threats.ts` | Vùng nguy hiểm ước lượng từ quân địch đang thấy |
+| `src/data/` | Công nghệ, đơn vị, công trình/cải tạo, tham số cân bằng |
+| `src/ai/` | `ai.ts` điều phối; `exploration`, `tactics`, `development`, `naval` |
+| `src/render/` | `World.ts` (camera, picking, cảnh, hoạt ảnh, vòng đời GPU), `unitModels.ts`, `visualIdentity.ts` (màu/biểu tượng phe) |
+| `src/ui/` | HUD, thiết lập, thành/quân, cây công nghệ, tùy chọn, phát lượt AI |
+| `src/persistence/save.ts` | Parse/validate save schema 8, localStorage, bảo vệ dữ liệu lỗi |
+| `tests/` | Test luật/AI/UI logic (`*.test.ts`), helper scenario, trang kiểm tra trực quan |
+| `scripts/selfplay.ts` | Máy tự chơi nhiều ván để đo nhịp và khả năng kết thúc |
 
 ## Luồng lệnh và thông tin ẩn
 
-UI hoặc AI gửi `Command` → `execute` kiểm tra → trạng thái mới và `ActionEvent` → UI đồng bộ → World phát hoạt ảnh. Kết quả được tính trước hoạt ảnh; tốc độ trình bày không làm thay đổi state. Các hàm `previewAttack`, `researchStatus`, lý do tuyển/xây/sửa/nâng được dùng lại để UI và engine không có hai bộ luật.
+UI hoặc AI gửi `Command` → `execute` kiểm tra và trả state mới cùng `ActionEvent` → UI đồng bộ → `World` phát hoạt ảnh. Kết quả tính trước hoạt ảnh; tốc độ trình bày không đổi state. `previewAttack`, `researchStatus` và các hàm lý do tuyển/xây/sửa/nâng được dùng chung để UI và engine không có hai bộ luật.
 
-`State` giữ settings, phe/lượt/vòng, tiles/cities/units, resources, technologies/research, knowledge riêng mỗi phe, event/serial, logs và winner. Bản đồ là lưới vuông với `q,r`, không phải axial lục giác. Sương mù dùng `observe`; AI không được dựa vào raw state để quyết định quân/thành/địa hình ẩn. Thay đổi dữ liệu ẩn không được đổi quyết định khi observation giữ nguyên.
+`State` giữ settings, phe/lượt/vòng, tiles/cities/units, tài nguyên, công nghệ/nghiên cứu, knowledge riêng mỗi phe, event/serial, logs và winner. Bản đồ là lưới vuông `q,r`. AI chỉ quyết định trên `observe(state, phe)`; đổi dữ liệu ẩn không được đổi quyết định khi observation giữ nguyên. Mọi lệnh AI vẫn qua engine, trả đúng chi phí.
 
-`nextAICommand` và `nextFactionCommand` điều phối các lớp `tactics`, `naval`, `development`, `exploration`. Mọi lệnh trả về vẫn phải qua engine; AI trả đúng chi phí, không được thêm tiền, tầm nhìn hoặc sức mạnh. Các heuristic không phải thuật toán tối ưu toàn cục.
+`State.events` là hàng đợi có giới hạn (ví dụ nhiều phát bắn thành trong một lệnh); mỗi event được lọc trong `observe`. Tóm tắt lượt AI giữ tối đa 12 sự kiện đã quan sát. Lệnh UI đang chờ và hoàn tác là tạm thời, không lưu qua reload.
 
-## Phát lượt, đồ họa và cleanup
+## Phát lượt và đồ họa
 
-`playbackPolicy.ts` dùng chung thời lượng: bình thường 0,8 s; Nhanh với AI 0,42 s; giảm chuyển động 0,16 s. AI Nhanh đợi 60 ms sau hành động thấy được và 16 ms ngoài tầm nhìn. UI chờ `onVisualEnd` cùng watchdog. `aiTurnStep.ts` bỏ callback từ snapshot cũ; reset ván phải reset ID hoạt ảnh. Tab ẩn tạm dừng lịch phát, không lộ event ẩn.
+`playbackPolicy.ts` giữ thời lượng chung: bình thường 0,8 s; AI Nhanh 0,42 s; giảm chuyển động 0,16 s. UI chờ `onVisualEnd` kèm watchdog; `aiTurnStep.ts` bỏ callback của snapshot cũ. Tab ẩn tạm dừng lịch phát.
 
-World render theo nhu cầu, trần khoảng 30 FPS; khi đứng yên không vẽ liên tục. Đầy đủ DPR tối đa 1,5; Thấp DPR 1, bỏ bóng và giảm trang trí. Phần cứng cùng vật liệu được gộp; chân, bánh, vũ khí và buồm vẫn chuyển động riêng. Hover không tính lại toàn bộ preview. Dispose phải bỏ timer/listener, nhãn, geometry/material và WebGL context. Đổi ván phải còn đúng một canvas.
+World render theo nhu cầu, trần ~30 FPS, đứng yên thì không vẽ. Đầy đủ: bóng, DPR tối đa 1,5; Vừa: không bóng, DPR 1; Thấp: bớt trang trí. Bề mặt bản đồ và bộ phận tĩnh được gộp bằng vertex color; chân, bánh, vũ khí, buồm vẫn chuyển động riêng. Dispose phải gỡ timer/listener, nhãn, geometry/material và WebGL context; đổi ván còn đúng một canvas.
 
-Tùy chọn UI có khóa riêng, không đưa vào luật/save gameplay. Bản phát hành hiện dùng localStorage, không dùng IndexedDB hoặc migration schema cũ. Kiểm tra dữ liệu save thuộc cùng phiên bản vẫn bắt buộc.
+Tùy chọn UI lưu riêng (`nation-ui-preferences-v1`), không vào save gameplay. Đổi luật có trạng thái lưu mới thì tăng schema; không chuyển ván cũ.
 
-## Chạy và kiểm tra
+## Lệnh phát triển
 
 ```bash
 npm install
-npm run dev       # 127.0.0.1:3010, strictPort
-npm test
-npm run build
-npm run preview   # production 3010
+npm run dev            # 127.0.0.1:3010, strictPort
+npm test               # node:test qua tsx
+npm run typecheck
+npm run lint           # ESLint (flat config), npm run lint:fix để tự sửa
+npm run format         # Prettier; npm run format:check để kiểm tra
+npm run build          # tsc + vite build vào dist/
+npm run preview        # bản build ở 3010
+npm run check          # format:check + lint + typecheck + test + build
+npm run selfplay -- random 1 medium 5 160   # map, số AI, độ khó, số ván, giới hạn lượt
 ```
 
-| Bài đo | Lệnh / trang quan sát |
-| --- | --- |
-| Nhịp khai cuộc | `node --import tsx scripts/measure-pace.ts --output artifacts/pace-after-1ai.json` |
-| AI bộ | `node --import tsx scripts/measure-tactics.ts`; `/tests/tactics.html` |
-| Hải quân | `node --import tsx scripts/measure-navy.ts`; `/tests/naval.html` |
-| Cân bằng | `node --import tsx scripts/measure-balance.ts final`; `/tests/balance.html` |
-| Mô hình/hành động | `/tests/visual.html` |
-| Hiệu năng/UI | `node --import tsx tests/perf/prepare-baseline.ts`; dev cổng 3012, `/tests/perf/bench.html`, `/tests/perf/load.html` |
+`npm run selfplay` in mỗi ván một dòng JSON (lượt kết thúc, người thắng, lượt giao chiến đầu, lượt chiếm thành đầu, lượt cuối số thành thay đổi, vàng tồn, quân chết…) và một dòng tổng kết. Số lượt mô phỏng không phải thời gian người chơi.
 
-Các fixture không phải gameplay production. Trang nạp fixture bước 5 chỉ dùng origin 3012 để tránh ghi đè ván trên 3010. Traces, baseline renderer và ảnh trong `artifacts/` là sản phẩm cục bộ có thể tái tạo; summary JSON/CSV cần giữ ở `docs/measurements/`. Chi tiết phương pháp/máy đo và hạn chế ở [reports/](reports/).
+## Trang kiểm tra trực quan
+
+Chạy dev ở cổng khác để không đụng ván lưu trên 3010, ví dụ `npx vite --port 3012`.
+
+| Trang | Dùng để |
+| --- | --- |
+| `/tests/tactics.html` | Xem AI bộ chơi qua các scenario dùng trong `tests/tactics.test.ts` |
+| `/tests/naval.html` | Xem AI vận tải/hộ tống qua scenario hải quân |
+| `/tests/v2/showcase.html` | Gallery 23 quân, 14 công trình, cảnh 60 quân; đo FPS/hoạt ảnh |
+| `/tests/v2/play.html` | Fixture đủ công nghệ/tài nguyên để thử tuyển/xây/đi–đánh/chiếm (ghi đè save của origin) |
+
+Chi tiết ở [tests/v2/README.md](../tests/v2/README.md). Ảnh chụp và trace cục bộ để trong `artifacts/` (bị Git bỏ qua).
 
 ## Quy tắc duy trì
 
-- [AGENTS.md](../AGENTS.md) áp dụng cho mọi agent: không tự stage, commit hoặc tạo commit gián tiếp.
-- [roadmap.md](roadmap.md) quyết định phạm vi/điểm dừng; [proposals/](proposals/) không tự tạo yêu cầu triển khai.
-- Sửa luật ở engine/data trước; UI/AI dùng cùng điều kiện, không vá riêng giao diện để vượt luật.
-- Khi đổi luật/cân bằng, đo lại scenario liên quan; không dùng trace của luật cũ để chứng minh bản mới đạt.
-- Không thêm dependency, worker, asset nặng hoặc thiết kế lại toàn bộ renderer chỉ để đáp ứng mục tưởng tượng; làm theo lỗi và số đo.
+- [AGENTS.md](../AGENTS.md) áp dụng cho mọi agent: không tự stage/commit; được tự chạy lint/format/test/build.
+- Sửa luật ở engine/data trước; UI/AI dùng cùng điều kiện, không vá giao diện để vượt luật.
+- Đổi luật/cân bằng thì đo lại bằng self-play và scenario liên quan.
+- Không thêm dependency, worker hoặc asset nặng khi chưa có lỗi hay số đo cần đến.

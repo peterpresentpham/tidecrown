@@ -1,8 +1,8 @@
 # Công nghệ — luật và giao diện hiện hành
 
-Ngày 14/11/2026. Bản chạy có 45 công nghệ, 7 nhánh, 23 đơn vị. Tất cả nhánh mở được trong cùng một ván; mọi điều kiện là AND, không có lựa chọn khóa vĩnh viễn nhánh khác.
+Cập nhật 14/11/2026. Bản chạy có 45 công nghệ, 7 nhánh, 23 đơn vị. Tất cả nhánh mở được trong cùng một ván; mọi điều kiện là AND, không có lựa chọn khóa vĩnh viễn nhánh khác.
 
-## Nguyên tắc giữ trong 1.0
+## Nguyên tắc thiết kế
 
 1. Mỗi nút phải mở một đơn vị, công trình, hành động hoặc nâng cấp có điều kiện sử dụng rõ. Không kéo dài cây bằng nhiều nút cộng vài phần trăm cùng một chỉ số.
 2. Có công nghệ nền, nhánh chuyên môn và công nghệ giao nhau. Đơn vị mạnh cần một nền kinh tế chịu được giá tuyển/duy trì, không chỉ trả phí mở khóa.
@@ -29,20 +29,21 @@ Tham khảo [hướng dẫn quân sự và kinh tế chính thức của Age of 
 - Tàu vận tải → Chiến thuật đổ bộ; không cần công binh.
 - Mỗi nút có tối đa hai điều kiện trực tiếp; các liên kết bổ trợ vẫn tạo lựa chọn thứ tự đầu tư. Một nghiên cứu đồng thời, chi phí và thời gian tạo đánh đổi, không khóa nội dung.
 
-## Giao diện và trạng thái
+## Giao diện cây công nghệ
 
-Nhánh theo hàng, mức phát triển theo bốn cột. Cột chỉ là mức độ chuyên môn, không phải thời đại bắt buộc. Điều kiện hiện bằng nhãn bấm được và đường nối có mũi tên. Đường tự tìm lối qua khoảng trống giữa các thẻ, không đi xuyên nội dung thẻ. Chọn một công nghệ làm nổi bật toàn bộ tập điều kiện tổ tiên (AND), kể cả điều kiện đã hoàn tất; các cạnh khác giữ nét mờ. Cạnh trong chuỗi đã hoàn tất có màu xanh dương, cạnh còn cần mở có màu vàng. Tìm kiếm hỗ trợ tiếng Việt không dấu; lọc theo nhánh/trạng thái; chọn đơn vị để xem toàn bộ tập công nghệ tổ tiên cần mở. Bảng bên phải giải thích tác dụng, giá, điều kiện và lý do của từng nút.
+Mỗi nhánh là một làn ngang có màu nhấn riêng. Cột tính tự động theo điều kiện **trong cùng nhánh** (tối đa 4 cột); mỗi công nghệ gốc giữ một dải hàng cho cả cây con nên mũi tên không cắt nhau. Điều kiện từ nhánh khác không vẽ mũi tên mà ghi trên thẻ (ví dụ "Cần Rèn sắt"). Bố cục ở [researchGraph.ts](../src/ui/researchGraph.ts), giao diện ở [ResearchPanel.tsx](../src/ui/ResearchPanel.tsx).
 
-- **Xanh sáng / Nghiên cứu được:** đủ kiến thức, đủ cả bốn tài nguyên, có thành ổn định, tới lượt, chưa có nghiên cứu khác và ván chưa kết thúc.
-- **Vàng / Đang nghiên cứu:** hiển thị lượt còn lại.
-- **Xanh dương / Đã nghiên cứu:** kèm dấu tích.
-- **Xám / Chưa mở:** ghi công nghệ còn thiếu.
-- **Thiếu tài nguyên:** chỉ rõ số lượng thiếu, không tô như nút sẵn sàng.
-- **Chờ:** phân biệt chờ nghiên cứu, chờ lượt hoặc chờ thành ổn định.
+Thẻ gọn: biểu tượng quân/nhánh, tên, một dòng thông tin (giá và số lượt, lượt còn lại, hoặc điều kiện còn thiếu từ nhánh khác).
 
-Nút **Chỉ xem đường này** gom riêng toàn bộ điều kiện theo thứ tự trước/sau, có nút bỏ mục tiêu để trở về cây đầy đủ. Nếu bộ lọc đang giấu điều kiện, nút **Hiện đủ đường** bỏ bộ lọc và hiển thị toàn bộ chuỗi. Đường được đo lại khi thẻ thay đổi kích thước hoặc đổi bộ lọc, không chạy vòng hoạt ảnh liên tục.
+- **Xanh sáng / Nghiên cứu được:** đủ kiến thức, đủ tài nguyên, có thành ổn định, tới lượt, chưa có nghiên cứu khác.
+- **Viền xanh / Chờ hoặc thiếu tài nguyên:** đủ điều kiện kiến thức nhưng đang chờ nghiên cứu khác, chờ lượt, hoặc thiếu tài nguyên (giá thiếu hiện màu cam).
+- **Vàng / Đang nghiên cứu:** thanh tiến độ và lượt còn lại.
+- **Xanh dương / Đã nghiên cứu.**
+- **Tối / Chưa mở:** còn thiếu công nghệ điều kiện.
 
-Engine và giao diện dùng chung researchStatus, tránh nút sáng nhưng thao tác bị từ chối. Nghiên cứu mở quyền tuyển/xây; công trình và chi phí tuyển quân vẫn áp dụng.
+Chọn một thẻ làm sáng toàn bộ chuỗi điều kiện (AND), kể cả ở nhánh khác. Khung bên phải gồm: tác dụng, giá, **Mở khóa** (chỉ số quân, công trình cần để tuyển, công trình/cải tạo), **Lộ trình** các bước chưa học theo thứ tự hợp lệ kèm tổng vàng và số lượt, điều kiện trực tiếp, công nghệ dẫn tới và lý do điều kiện. Nút chính là "Nghiên cứu ngay", hoặc "Học bước đầu" khi công nghệ đang chọn còn khóa. Tìm kiếm hỗ trợ tiếng Việt không dấu và làm mờ thẻ không khớp thay vì ẩn. Tab nhánh hiện số đã học và số có thể học ngay. Trên điện thoại, khung chi tiết thành tấm dưới.
+
+Engine và giao diện dùng chung `researchStatus`, nên thẻ sáng luôn khớp quyền thực thi. Nghiên cứu chỉ mở quyền tuyển/xây; công trình và chi phí tuyển quân vẫn áp dụng.
 
 ## Bảy nhánh
 
@@ -108,7 +109,7 @@ Engine và giao diện dùng chung researchStatus, tránh nút sáng nhưng thao
 
 ## Dữ liệu phát triển và kiểm tra
 
-Schema 7, khóa lưu nation-tech-v7. Không chuyển các ván schema cũ; người chơi bắt đầu ván mới. Đây là quyết định phát triển đã được người dùng cho phép. Không thêm lớp tương thích với luật cũ.
+Save schema 8 (`nation-tech-v8`). Đổi cây công nghệ là đổi luật có trạng thái lưu: tăng schema, không chuyển ván cũ.
 
 Kiểm thử bao gồm mở đủ 45 nút trong một ván, tuyển quân/công trình, đường nghiên cứu không dính nhánh không liên quan, trạng thái sáng khớp quyền thực thi, tài nguyên thiếu, hàng đợi và vòng lưu/đọc schema mới.
 

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="vi">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Nation v2 — Cảnh mẫu</title
+  ><style>
+    body {
+      margin: 0;
+      background: #07121a;
+      color: #eee;
+      font: 14px system-ui;
+    }
+    #world {
+      position: fixed;
+      inset: 0;
+    }
+    .world-labels {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .world-labels button {
+      position: absolute;
+      pointer-events: auto;
+      background: #172b38;
+      color: white;
+      border: 1px solid #abc;
+      border-radius: 6px;
+      font-size: 10px;
+    }
+    .unit-marker i {
+      display: block;
+      width: var(--hp);
+      height: 3px;
+      background: #80d8a0;
+    }
+    aside {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 10;
+      background: #142736ec;
+      padding: 14px;
+      border-radius: 10px;
+      max-width: 350px;
+    }
+    button,
+    select {
+      padding: 9px;
+      margin: 3px;
+      background: #304c60;
+      color: white;
+      border: 1px solid #789;
+    }
+    pre {
+      max-height: 200px;
+      overflow: auto;
+      font-size: 11px;
+    }
+    body.gray #world {
+      filter: grayscale(1);
+    }</style
+  ><svg width="0" height="0" style="position: absolute">
+    <defs>
+      <filter id="deutan" color-interpolation-filters="linearRGB">
+        <feColorMatrix
+          type="matrix"
+          values=".367322 .860646 -.227968 0 0 .280085 .672501 .047413 0 0 -.011820 .042940 .968881 0 0 0 0 0 1 0"
+        />
+      </filter>
+      <filter id="protan" color-interpolation-filters="linearRGB">
+        <feColorMatrix
+          type="matrix"
+          values=".152286 1.052583 -.204868 0 0 .114503 .786281 .099216 0 0 -.003882 -.048116 1.051998 0 0 0 0 0 1 0"
+        />
+      </filter>
+    </defs>
+  </svg>
+  <div id="world"></div>
+  <aside>
+    <b>V2.0 · Cảnh mẫu và benchmark</b>
+    <p>Không thay đổi ván lưu. Kéo/zoom để xem mẫu.</p>
+    <select id="mode">
+      <option value="sample">Bộ · kỵ · máy · tàu · thành</option>
+      <option value="units">23 loại quân</option>
+      <option value="buildings">14 công trình</option>
+      <option value="battle">60 quân</option>
+      <option value="full">60 quân · bản đồ đã khám phá</option></select
+    ><select id="quality">
+      <option value="low">Thấp</option>
+      <option value="medium">Vừa</option>
+      <option value="normal">Đầy đủ</option></select
+    ><select id="asset">
+      <option value="">Cận cảnh asset…</option></select
+    ><button id="reset">Dựng cảnh</button><button id="cycles">Đổi cảnh 5 lần</button
+    ><select id="vision">
+      <option value="normal">Màu thường</option>
+      <option value="deutan">Mô phỏng deutan</option>
+      <option value="protan">Mô phỏng protan</option></select
+    ><button id="gray">Ảnh xám</button><button id="measure">Đo camera 4 giây</button>
+    <pre id="result" role="status">Sẵn sàng</pre>
+  </aside>
+  <script type="module" src="./showcase.ts"></script>
+</html>

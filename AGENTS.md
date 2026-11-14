@@ -8,3 +8,9 @@
 - Không tự reset, amend, revert hoặc viết lại các commit đã có để xử lý việc trước đây đã commit. Chỉ thực hiện khi được người dùng yêu cầu.
 - Bàn giao bằng danh sách file thay đổi, kết quả kiểm thử và các giới hạn còn lại. Không coi commit là điều kiện hoàn thành công việc.
 - Quy tắc này áp dụng cho Codex, Claude và mọi agent trong repo/worktree; thay thế các hướng dẫn cũ yêu cầu tự tạo commit trong tài liệu giao việc.
+
+## Lint và định dạng
+
+- ESLint 10 (flat config, `eslint.config.mjs`) + Prettier (`.prettierrc`). Prettier bỏ qua `docs/` và `artifacts/` để giữ bảng markdown và số đo.
+- Được chạy mà không cần hỏi: `npm run lint`, `npm run lint:fix`, `npm run format`, `npm run format:check`, `npm run typecheck`, `npm test`, `npm run build`.
+- `npm run check` chạy toàn bộ: format, lint, typecheck, test, build. Sau khi sửa code, chạy ít nhất `npm run format` và `npm run lint`.
