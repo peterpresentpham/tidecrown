@@ -5,7 +5,7 @@ Ngày giao việc: 14/11/2026. Dự án Nation, prototype 0.7.0. Đọc [06 — 
 ## Cách mở và chạy
 
 - Repo gốc của Codex: `/Users/peterteencare/Documents/personal/nation`.
-- Worktree của Claude: `/Users/peterteencare/.codex/worktrees/claude-ui-performance/nation`.
+- Worktree của Claude: `/Users/peterteencare/Documents/personal/nation-claude-ui-performance`.
 - Nhánh: `claude/ui-performance`.
 - Hai thư mục dùng chung Git history nhưng có file làm việc riêng. Claude chỉ sửa trong worktree của mình.
 - Worktree không có sẵn node_modules. Chạy `npm ci` tại worktree, không dùng chung hoặc sửa node_modules của repo gốc.
@@ -19,7 +19,7 @@ Bạn đang phát triển Nation, một game chiến thuật 3D theo lượt b�
 
 ### 1. Kiểm tra đúng nơi làm việc
 
-1. CWD phải là `/Users/peterteencare/.codex/worktrees/claude-ui-performance/nation`, branch phải là `claude/ui-performance`. Kiểm tra `git status`, đọc hướng dẫn repo nếu có. Không checkout/sửa repo gốc.
+1. CWD phải là `/Users/peterteencare/Documents/personal/nation-claude-ui-performance`, branch phải là `claude/ui-performance`. Kiểm tra `git status`, đọc hướng dẫn repo nếu có. Không checkout/sửa repo gốc.
 2. Đọc tài liệu 06, 08, 16, 17 và file giao việc này. Code là cơ sở xác nhận hiện trạng; tài liệu cũ 01–05 có ý tưởng đã bỏ khỏi phạm vi.
 3. Chạy test/build ban đầu, ghi lỗi có sẵn riêng với lỗi do thay đổi mới. Mốc gốc có 82 test đạt; không hard-code số test vào điều kiện hoàn thành vì Codex có thể bổ sung test.
 
