@@ -1,0 +1,5 @@
+/* Inline "why unavailable" lines for city management and unit actions. */
+.city-card small.reason,.recruit-list>button>div>small.reason{color:#e9c97f;line-height:1.45}
+.build-list>button:disabled,.recruit-list>button:disabled{opacity:.72;cursor:default}
+.build-list>button:disabled strong{color:#b9c2b4}
+.unit-actions .action-block{font-size:10px;color:#e9c97f;padding:2px 4px;line-height:1.4}

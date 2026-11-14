@@ -83,7 +83,7 @@ Nếu gặp lỗi ở file ngoài quyền sở hữu, ghi ví dụ tái hiện v
 - Giữ các hợp đồng `State`, `Command`, `ActionEvent`, `observe`, `execute`, `nextAICommand` và cấu trúc dữ liệu quân/công nghệ hiện tại.
 - Nếu cần thêm dữ liệu để tính thời gian hoạt ảnh, ưu tiên suy từ sự kiện đã lọc cho người chơi và visual settings. Không bắt engine/AI thay schema để UI chạy được.
 - Chế độ nhanh và chất lượng thấp chỉ đổi presentation/scheduling. Với cùng chuỗi command, kết quả State gameplay phải như cũ.
-- Không merge/rebase/cherry-pick nhánh Codex hoặc sửa main khi đang làm. Bàn giao các commit nhỏ trên nhánh Claude; Codex ghép sau khi review.
+- Không merge/rebase/cherry-pick nhánh Codex hoặc sửa main khi đang làm. Không tự commit hoặc stage; để thay đổi trong working tree cho người dùng review và commit thủ công. Codex chỉ ghép khi người dùng yêu cầu.
 
 ### 6. Cách kiểm tra và điều kiện hoàn thành phần Claude
 
@@ -101,9 +101,9 @@ Không thêm công nghệ/quân/map; không cân bằng giá/HP; không thêm AI
 
 ### 8. Bàn giao
 
-- Tạo commit nhỏ theo kết quả, ví dụ playback, graphics settings, usability/report. Chỉ stage các file của phần mình; không commit dist/node_modules/artifacts hoặc thay đổi không liên quan.
-- Viết `docs/claude-ui-performance-report.md`: commit/hash, file đổi, API visual thêm nếu có, test/build, bảng đo trước/sau, screenshot, giới hạn và yêu cầu còn cần Codex xử lý.
-- Trả về nhánh + các commit theo thứ tự để ghép, mô tả thay đổi và kết quả kiểm tra. Không tự merge vào main.
+- Không tự chạy git add/commit. Để các thay đổi của phần mình trong working tree; người dùng sẽ review, stage và commit thủ công. Không đưa dist/node_modules/artifacts vào danh sách file nguồn cần commit.
+- Viết `docs/claude-ui-performance-report.md`: nhánh đang làm, file đổi, API visual thêm nếu có, test/build, bảng đo trước/sau, screenshot, giới hạn và yêu cầu còn cần Codex xử lý.
+- Trả về nhánh, danh sách file thay đổi, mô tả và kết quả kiểm tra. Không tự commit hoặc merge vào main.
 - Dừng khi A/B/C và các kiểm tra trong khả năng môi trường đã hoàn tất, nêu rõ điều kiện chưa kiểm chứng; không tự chuyển sang bước gameplay khác.
 
 ## Hướng dẫn ghép cho Codex/người dùng

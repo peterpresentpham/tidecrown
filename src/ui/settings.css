@@ -1,0 +1,10 @@
+/* In-menu presentation settings (AI playback speed, graphics quality). */
+.visual-settings{display:flex;flex-direction:column;gap:8px;padding:9px 11px 10px;border-top:1px solid #a1b0a72b}
+.visual-settings .setting-row{display:flex;flex-direction:column;gap:5px}
+.visual-settings .setting-label{display:flex;align-items:center;gap:6px;font-size:11px;color:#c9d6d2}
+.visual-settings .setting-options{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:2px;border-radius:6px;background:#0b171d99}
+.visual-settings .setting-options button{padding:7px 4px;border-radius:4px;background:transparent;font-size:11px;color:#a6bbbc;min-height:30px}
+.visual-settings .setting-options button:hover{background:#ffffff12;color:#f4edda}
+.visual-settings .setting-options button.active{background:#2f6a86;color:#fff;box-shadow:inset 0 0 0 1px #8fd0ef66}
+.visual-settings .setting-options button:focus-visible{outline:2px solid #8fd0ef;outline-offset:1px}
+.visual-settings small{font-size:10px;line-height:1.5;color:#a6bbbc}

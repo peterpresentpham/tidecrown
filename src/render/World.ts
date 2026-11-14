@@ -2,11 +2,21 @@ import { buildUnitModel } from './unitModels';
 import { observe, isVisible, isExplored } from '../game/visibility';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { actionSeconds, DEFAULT_UI_PREFERENCES, type AISpeed, type GraphicsQuality } from '../ui/playbackPolicy';
 import { cityAt, FACTIONS, distance, previewAttack, reachable, hasBuilding, tileAt, UNITS, type State, type Tile, type Unit, type City, type ActionEvent } from '../game/engine';
 
 export function worldPoint(tile: { q: number; r: number }, y = 0) { return new THREE.Vector3(tile.q * 1.9, y, tile.r * 1.9); }
 const COLORS = { grass: ['#71984e', '#749b50', '#6e954d'], forest: ['#608745', '#658a47'], hill: ['#b2ae80', '#a9a57a'], mountain: ['#8c998c'], sand: ['#d3c39a', '#dfcea5'], water: ['#4a8c9b'], unknown:['#050608'] };
 const pickColor = (t: Tile) => COLORS[t.terrain][Math.abs(t.q * 7 + t.r * 3) % COLORS[t.terrain].length];
+
+// 30 FPS cap. Two 60 Hz vsync ticks sum to ~33.3 ms with jitter on either side of 1/30 s; without the
+// tolerance about half of the frames slip to a third tick and motion runs near 20 FPS.
+const FRAME_BUDGET = 1 / 30 - 0.004;
+
+/** Presentation settings only; none of these change State, fog or rules. */
+export type WorldVisualSettings = { quality?: GraphicsQuality; aiSpeed?: AISpeed; reducedMotion?: boolean };
+export type WorldOptions = WorldVisualSettings & { onVisualEnd?: (eventId: number) => void };
 
 export class World {
   private scene = new THREE.Scene();
@@ -19,6 +29,11 @@ export class World {
   private cities = new THREE.Group();
   private troops = new THREE.Group();
   private highlights = new THREE.Group();
+  private hoverGroup = new THREE.Group();
+  private sun: THREE.DirectionalLight;
+  private quality: GraphicsQuality = DEFAULT_UI_PREFERENCES.graphics;
+  private aiSpeed: AISpeed = DEFAULT_UI_PREFERENCES.aiSpeed;
+  private onVisualEnd?: (eventId: number) => void;
   private raycaster = new THREE.Raycaster();
   private pointer = new THREE.Vector2();
   private tileMeshes: THREE.Object3D[] = [];
@@ -36,7 +51,7 @@ export class World {
   private selectedTile: string | null = null;
   private showGrid = false;
   private actionTiles: string[] = [];
-  private reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  private reduced: boolean;
   private disposed = false;
   private lastEvent:number|undefined;
   private mapSignatures=new Map<string,string>();
@@ -47,16 +62,18 @@ export class World {
   private paused=false;
   private requestDraw=()=>{this.needsDraw=true;};
   private clock = new THREE.Clock();
-  constructor(private container: HTMLElement, state: State, private onSelect: (id: string, city?: boolean) => void, private onHover: (id: string | null) => void) {
+  constructor(private container: HTMLElement, state: State, private onSelect: (id: string, city?: boolean) => void, private onHover: (id: string | null) => void, options: WorldOptions = {}) {
     this.state = state;this.lastEvent=state.event?.id;
+    this.reduced = options.reducedMotion ?? window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.quality = options.quality ?? this.quality; this.aiSpeed = options.aiSpeed ?? this.aiSpeed; this.onVisualEnd = options.onVisualEnd;
     this.fogTexture.magFilter=THREE.LinearFilter;this.fogTexture.minFilter=THREE.LinearFilter;this.fogTexture.generateMipmaps=false;
     this.scene.background = new THREE.Color('#050608');
     this.scene.fog = new THREE.Fog('#050608', 65, 115);
     this.camera = new THREE.OrthographicCamera(-18, 18, 15, -15, .1, 150);
     this.camera.position.set(12, 19, 16);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.setPixelRatio(this.pixelRatio());
+    this.renderer.shadowMap.enabled = this.quality === 'normal';
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -74,9 +91,9 @@ export class World {
     this.controls.target.set(0, 0, 0);
     this.labelLayer = document.createElement('div'); this.labelLayer.className = 'world-labels'; container.appendChild(this.labelLayer);
     const ambient = new THREE.HemisphereLight('#fff8de', '#679a9f', 2.1); this.scene.add(ambient);
-    const sun = new THREE.DirectionalLight('#fff1cd', 2.6); sun.position.set(-12, 24, 12); sun.castShadow = true;
+    const sun = new THREE.DirectionalLight('#fff1cd', 2.6); sun.position.set(-12, 24, 12); sun.castShadow = this.quality === 'normal'; this.sun = sun;
     sun.shadow.mapSize.set(1024, 1024); sun.shadow.camera.left = -40; sun.shadow.camera.right = 40; sun.shadow.camera.top = 32; sun.shadow.camera.bottom = -32; sun.shadow.normalBias = .045;
-    this.scene.add(sun, this.staticGroup, this.cities, this.troops, this.highlights,this.effectGroup);
+    this.scene.add(sun, this.staticGroup, this.cities, this.troops, this.highlights,this.hoverGroup,this.effectGroup);
     this.renderer.shadowMap.autoUpdate=false;this.renderer.shadowMap.needsUpdate=true;
     this.buildMap(); this.sync(state, null, null, false); this.resetCamera();
     this.observer = new ResizeObserver(() => this.resize()); this.observer.observe(container); this.resize();
@@ -107,6 +124,9 @@ export class World {
     }
     return this.materials.get(key)!;
   }
+  /** Purely decorative parts that low quality hides; never units, cities, improvements or fog. */
+  private decor(o: THREE.Object3D) { o.userData.decor = true; o.visible = this.quality === 'normal'; return o; }
+  private pixelRatio() { return this.quality === 'low' ? 1 : Math.min(window.devicePixelRatio, 1.5); }
   private geometry<T extends THREE.BufferGeometry>(g: T): T { this.geometries.push(g); return g; }
   private mesh(g: THREE.BufferGeometry, color: string, parent: THREE.Object3D, x = 0, y = 0, z = 0) {
     const m = new THREE.Mesh<THREE.BufferGeometry, THREE.Material>(this.geometry(g), this.mat(color)); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; parent.add(m); return m;
@@ -128,23 +148,25 @@ export class World {
       if (t.terrain === 'water') {
         tile.receiveShadow = false;
         if ((t.q * 3 + t.r) % 5 === 0) {
-          const wave = this.mesh(new THREE.BoxGeometry(.45, .008, .017), '#b9d9d3', parent, p.x, -.158, p.z); wave.castShadow = false;
+          const wave = this.mesh(new THREE.BoxGeometry(.45, .008, .017), '#b9d9d3', parent, p.x, -.158, p.z); wave.castShadow = false; this.decor(wave);
         }
         continue;
       }
       if (this.state.cities.some(c => c.tile === t.id)) continue;
       if (t.terrain === 'forest') {
-        for (const [dx, dz, scale] of [[-.28, -.15, 1], [.31, .2, .8], [.08, -.4, .65]]) {
+        for (const [index, [dx, dz, scale]] of [[-.28, -.15, 1], [.31, .2, .8], [.08, -.4, .65]].entries()) {
           const g = new THREE.Group(); g.position.set(p.x + dx, t.height, p.z + dz); g.scale.setScalar(scale); parent.add(g);
+          // Low quality keeps one full tree per forest tile so the terrain still reads as forest.
+          if (index > 0) this.decor(g);
           this.mesh(new THREE.CylinderGeometry(.05, .08, .45, 5), '#70674b', g, 0, .2);
           this.mesh(new THREE.ConeGeometry(.37, .77, 6), '#426d55', g, 0, .68);
           this.mesh(new THREE.ConeGeometry(.28, .62, 6), '#557d5c', g, 0, 1.05);
         }
       } else if (t.terrain === 'mountain') {
         this.mesh(new THREE.ConeGeometry(.7, 1.4, 5), '#879387', parent, p.x, t.height + .63, p.z);
-        this.mesh(new THREE.ConeGeometry(.27, .45, 5), '#dedbc3', parent, p.x, t.height + 1.15, p.z);
+        this.decor(this.mesh(new THREE.ConeGeometry(.27, .45, 5), '#dedbc3', parent, p.x, t.height + 1.15, p.z));
       } else if ((t.q * 5 + t.r * 3) % 7 === 0) {
-        const rock = this.mesh(new THREE.DodecahedronGeometry(.19, 0), '#a4aa8d', parent, p.x + .32, t.height + .1, p.z - .3); rock.scale.y = .7;
+        const rock = this.mesh(new THREE.DodecahedronGeometry(.19, 0), '#a4aa8d', parent, p.x + .32, t.height + .1, p.z - .3); rock.scale.y = .7; this.decor(rock);
       }
     }
     for(const group of this.mapGroups.values()) group.traverse(o=>{
@@ -218,7 +240,24 @@ export class World {
     }
     return g;
   }
-  private unitModel(unit:Unit){return buildUnitModel(unit,{mesh:(...args)=>this.mesh(...args),box:(...args)=>this.box(...args)});}
+  private unitModel(unit:Unit){const g=buildUnitModel(unit,{mesh:(...args)=>this.mesh(...args),box:(...args)=>this.box(...args)});this.mergeRigidParts(g);return g;}
+  /**
+   * Bakes the model's static parts that share a material into one mesh (same shape and colours, far
+   * fewer draw calls). Legs, wheels and weapon pivots stay separate because actions animate them.
+   */
+  private mergeRigidParts(g:THREE.Group){
+    const animated=new Set<THREE.Object3D>([...(g.userData.legs??[]),...(g.userData.wheels??[]),g.userData.weapon,g.userData.sail].filter(Boolean));
+    const byMaterial=new Map<THREE.Material,THREE.Mesh[]>();
+    for(const o of g.children)if(o instanceof THREE.Mesh&&!animated.has(o)&&!Array.isArray(o.material)){const list=byMaterial.get(o.material)??[];list.push(o);byMaterial.set(o.material,list);}
+    for(const [material,meshes] of byMaterial){
+      if(meshes.length<2)continue;
+      const parts=meshes.map(m=>{m.updateMatrix();const geo=m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone();geo.applyMatrix4(m.matrix);return geo;});
+      const merged=mergeGeometries(parts,false);parts.forEach(p=>p.dispose());
+      if(!merged)continue;
+      for(const m of meshes){g.remove(m);m.geometry.dispose();const i=this.geometries.indexOf(m.geometry);if(i>=0)this.geometries.splice(i,1);}
+      const mesh=new THREE.Mesh(this.geometry(merged),material);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);
+    }
+  }
   private improvementModel(parent:THREE.Group,t:Tile,p:THREE.Vector3){
     if(t.road)this.box(parent,'#b5a276',[1.82,.025,.24],[p.x,t.height+.02,p.z]);
     if(t.bridge){for(let z=-.85;z<=.9;z+=.22)this.box(parent,'#987345',[1.82,.12,.16],[p.x,.12,p.z+z]);for(const x of [-.6,.6])this.box(parent,'#c2aa76',[.06,.5,1.8],[p.x+x,.38,p.z]);}
@@ -296,12 +335,13 @@ export class World {
     for(const g of v.ghosts){this.effectGroup.remove(g);this.clearGroup(g);}
     this.clearGroup(this.effectGroup);
     for(const g of this.unitModels.values()){g.position.copy(g.userData.target);for(const leg of g.userData.legs??[])leg.rotation.x=0;if(g.userData.weapon)g.userData.weapon.rotation.x=0;}
-    this.visual=null;this.renderer.shadowMap.needsUpdate=true;
+    this.visual=null;this.renderer.shadowMap.needsUpdate=true;this.needsDraw=true;
+    if(!this.disposed)this.onVisualEnd?.(v.event.id);
   }
   private startVisual(e:ActionEvent,ghosts:THREE.Group[]){
     this.finishVisual();
     const actor=this.unitModels.get(e.actor)??ghosts.find(g=>g.userData.unitId===e.actor),target=e.target?this.unitModels.get(e.target)??ghosts.find(g=>g.userData.tile===e.to):undefined;
-    const v={event:e,time:0,duration:this.reduced?.16:.8,actorBase:actor?.position.clone(),targetBase:target?.position.clone(),ghosts,labels:[]} as NonNullable<World['visual']>;
+    const v={event:e,time:0,duration:actionSeconds({aiSpeed:this.aiSpeed,reducedMotion:this.reduced},e.owner),actorBase:actor?.position.clone(),targetBase:target?.position.clone(),ghosts,labels:[]} as NonNullable<World['visual']>;
     const float=(text:string,tile:string,color:string,start=.4)=>{const t=tileAt(this.state,tile);if(!t)return;const el=document.createElement('div');el.className='combat-float';el.textContent=text;el.style.color=color;this.labelLayer.appendChild(el);v.labels.push({el,point:worldPoint(t,t.height+1.6),start});};
     if(e.kind==='attack'){
       if(e.damage)float(`−${e.damage}`,e.to,'#ffbe9f');if(e.fortDamage)float(`−${e.fortDamage} tường`,e.to,'#f3dc8e');if(e.retaliation)float(`−${e.retaliation} phản kích`,e.from,'#ffc1ab',.65);if(!e.damage&&!e.fortDamage)float('CHIẾM',e.to,'#c6e2ff');
@@ -310,6 +350,8 @@ export class World {
       v.impact=this.mesh(new THREE.TorusGeometry(.48,.06,4,12),'#ffe5a3',this.effectGroup);v.impact.rotation.x=-Math.PI/2;v.impact.visible=false;
     }else if(['heal','repair','build'].includes(e.kind))float(e.kind==='heal'?`+${-e.damage} HP`:e.kind==='repair'?'SỬA CHỮA':'XÂY DỰNG',e.to,'#bfe794');
     this.visual=v;
+    // A paused or hidden view never ticks, so an animation would hold the UI lock. Show the end state instead.
+    if(this.paused||document.hidden)this.finishVisual();
   }
   private tickVisual(dt:number){
     const v=this.visual;if(!v)return;v.time+=dt;const t=Math.min(1,v.time/v.duration),e=v.event,actor=this.unitModels.get(e.actor)??v.ghosts.find(g=>g.userData.unitId===e.actor),target=e.target?this.unitModels.get(e.target)??v.ghosts[0]:undefined;
@@ -338,12 +380,12 @@ export class World {
       }
     }); group.clear();
   }
-  private ring(tileId: string, color: string, opacity: number, fill = false) {
+  private ring(tileId: string, color: string, opacity: number, fill = false, group = this.highlights) {
     const t = tileAt(this.state, tileId); if (!t) return;
     const geometry = fill ? new THREE.PlaneGeometry(1.72, 1.72) : new THREE.RingGeometry(.79, .88, 32);
     const material = new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity, depthWrite: false }); material.userData.transient = true;
     const m = new THREE.Mesh(this.geometry(geometry), material); m.rotation.x = -Math.PI / 2;
-    m.position.copy(worldPoint(t, t.terrain === 'water' ? -.14 : t.height + .028)); m.renderOrder = 2; this.highlights.add(m);
+    m.position.copy(worldPoint(t, t.terrain === 'water' ? -.14 : t.height + .028)); m.renderOrder = 2; group.add(m);
   }
   private updateHighlights() {
     this.needsDraw=true;
@@ -356,7 +398,13 @@ export class World {
     }
     if (u?.owner === 'player' && this.state.turn === 'player' && !u.acted) for (const t of this.state.tiles) if (previewAttack(this.state, u, t.id).legal) this.ring(t.id, '#ff735a', .95);
     if (this.selectedTile&&isExplored(this.state,'player',this.selectedTile)) this.ring(this.selectedTile, '#fff2a3', 1);
-    if (this.hovered && isExplored(this.state,'player',this.hovered) && this.hovered !== this.selectedTile) this.ring(this.hovered, '#fff8d8', .8);
+    this.updateHover();
+  }
+  /** Hover only redraws its own ring; attack/move previews are recomputed on sync, not per mouse move. */
+  private updateHover() {
+    this.needsDraw=true;
+    this.clearGroup(this.hoverGroup);
+    if (this.hovered && isExplored(this.state,'player',this.hovered) && this.hovered !== this.selectedTile) this.ring(this.hovered, '#fff8d8', .8, false, this.hoverGroup);
   }
   private pick(event: PointerEvent): string | null {
     const rect = this.renderer.domElement.getBoundingClientRect();
@@ -375,8 +423,8 @@ export class World {
     if (this.down?.button === 0 && Math.hypot(e.clientX - this.down.x, e.clientY - this.down.y) < 5) { const id = this.pick(e); if (id) this.onSelect(id); }
     this.down = null;
   };
-  private pointerMove = (e: PointerEvent) => { const id = this.pick(e); if (id !== this.hovered) { this.hovered = id; this.onHover(id); this.updateHighlights(); } };
-  private pointerLeave = () => { this.hovered = null; this.down = null; this.onHover(null); this.updateHighlights(); };
+  private pointerMove = (e: PointerEvent) => { const id = this.pick(e); if (id !== this.hovered) { this.hovered = id; this.onHover(id); this.updateHover(); } };
+  private pointerLeave = () => { this.hovered = null; this.down = null; this.onHover(null); this.updateHover(); };
   private contextMenu = (e: Event) => e.preventDefault();
   private keyDown = (e: KeyboardEvent) => {
     if ((e.target as HTMLElement).closest('input, textarea, select, [role=dialog]')) return;
@@ -392,7 +440,23 @@ export class World {
   }
   focus(tileId: string) { const t = tileAt(this.state, tileId); if (!t) return; const target = worldPoint(t); const delta = target.clone().sub(this.controls.target); this.camera.position.add(delta); this.controls.target.copy(target); this.controls.update(); }
   setPaused(value:boolean){if(value&&!this.paused)this.finishVisual();this.paused=value;this.needsDraw=true;}
-  diagnostics(){return {drawCalls:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,units:this.unitModels.size,effectObjects:this.effectGroup.children.length};}
+  /** Applies presentation settings in place: camera, selection, units and fog are untouched. */
+  setVisualSettings(settings:WorldVisualSettings){
+    if(settings.aiSpeed)this.aiSpeed=settings.aiSpeed;
+    if(settings.reducedMotion!==undefined)this.reduced=settings.reducedMotion;
+    if(settings.quality&&settings.quality!==this.quality){
+      this.quality=settings.quality;const normal=this.quality==='normal';
+      this.renderer.setPixelRatio(this.pixelRatio());
+      this.renderer.shadowMap.enabled=normal;this.sun.castShadow=normal;this.renderer.shadowMap.needsUpdate=true;
+      // Shadow support is compiled into each program, so shared materials must recompile once.
+      this.scene.traverse(o=>{if(o.userData.decor)o.visible=normal;if(o instanceof THREE.Mesh)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true);});
+      this.resize();
+    }
+    this.needsDraw=true;
+  }
+  visualSettings(){return {quality:this.quality,aiSpeed:this.aiSpeed,reducedMotion:this.reduced,pixelRatio:this.renderer.getPixelRatio(),shadows:this.renderer.shadowMap.enabled};}
+  isAnimating(){return !!this.visual;}
+  diagnostics(){const memory=this.renderer.info.memory;return {drawCalls:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,units:this.unitModels.size,effectObjects:this.effectGroup.children.length,geometries:memory.geometries,textures:memory.textures,programs:this.renderer.info.programs?.length??0,labels:this.labels.length,trackedGeometries:this.geometries.length,materials:this.materials.size};}
   private resize() {
     this.needsDraw=true;
     const w = this.container.clientWidth, h = this.container.clientHeight;
@@ -402,7 +466,7 @@ export class World {
   }
   private animate = () => {
     if (this.disposed) return;
-    this.frame = requestAnimationFrame(this.animate); const delta=this.clock.getDelta();if(document.hidden||this.paused)return;this.controls.update();this.renderTime+=delta;if(this.renderTime<1/30)return;if(!this.needsDraw&&!this.visual){this.renderTime=0;return;}const dt=Math.min(this.renderTime,.08);this.renderTime=0;this.tickVisual(dt);
+    this.frame = requestAnimationFrame(this.animate); const delta=this.clock.getDelta();if(document.hidden||this.paused)return;this.controls.update();this.renderTime+=delta;if(this.renderTime<FRAME_BUDGET)return;if(!this.needsDraw&&!this.visual){this.renderTime=0;return;}const dt=Math.min(this.renderTime,.08);this.renderTime=0;this.tickVisual(dt);
     this.controls.target.x = THREE.MathUtils.clamp(this.controls.target.x, -31, 31); this.controls.target.z = THREE.MathUtils.clamp(this.controls.target.z, -23, 23); this.controls.update();
     
     const w = this.container.clientWidth, h = this.container.clientHeight;
@@ -418,6 +482,6 @@ export class World {
     window.removeEventListener('keydown', this.keyDown);
     this.renderer.domElement.removeEventListener('pointerdown', this.pointerDown); this.renderer.domElement.removeEventListener('pointerup', this.pointerUp);
     this.renderer.domElement.removeEventListener('pointermove', this.pointerMove); this.renderer.domElement.removeEventListener('pointerleave', this.pointerLeave); this.renderer.domElement.removeEventListener('contextmenu', this.contextMenu);
-    this.finishVisual(); this.clearGroup(this.cities); this.clearGroup(this.troops); this.clearGroup(this.highlights); this.geometries.forEach(g => g.dispose()); this.materials.forEach(m => m.dispose()); this.fogTexture.dispose(); this.renderer.forceContextLoss(); this.renderer.dispose(); this.renderer.domElement.remove(); this.labelLayer.remove();
+    this.finishVisual(); this.clearGroup(this.cities); this.clearGroup(this.troops); this.clearGroup(this.highlights); this.clearGroup(this.hoverGroup); this.geometries.forEach(g => g.dispose()); this.materials.forEach(m => m.dispose()); this.fogTexture.dispose(); this.renderer.forceContextLoss(); this.renderer.dispose(); this.renderer.domElement.remove(); this.labelLayer.remove();
   }
 }
