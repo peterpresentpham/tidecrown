@@ -47,3 +47,4 @@
 @media(max-width:540px){.research-route-direction{font-size:9px}.research-route-direction small{display:none}}
 .research-focused .research-ready,.research-focused .research-branches{display:none}
 .research-focused .research-route-grid .research-card-heading{min-height:0}
+@media(prefers-reduced-motion:reduce){.research-map{scroll-behavior:auto}}

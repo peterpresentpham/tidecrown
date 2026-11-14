@@ -78,6 +78,7 @@ test('difficulty affects AI research pace and army capacity while every AI comma
     const u=s.units.find(u=>u.owner==='enemy')!;
     const free=s.tiles.filter(t=>passable(t)&&!s.units.some(u=>u.tile===t.id)&&!s.cities.some(c=>c.tile===t.id));
     s.units.push({...u,id:'extra1',tile:free[0].id},{...u,id:'extra2',tile:free[1].id});
+    s.technologies.enemy=['basic_woodworking','archery'];s.cities.filter(c=>c.owner==='enemy').forEach(c=>{c.constructed=true;});
     s.resources.enemy={gold:100,food:50,wood:50,stone:50};s.research.enemy={technology:'basic_agriculture',remaining:1};refreshKnowledge(s);
   }
   assert.equal(nextAICommand(easy).type,'end');assert.equal(nextAICommand(hard).type,'recruit');

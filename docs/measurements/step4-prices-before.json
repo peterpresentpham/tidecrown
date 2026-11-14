@@ -1,0 +1,118 @@
+{
+  "plannerFingerprint": "aad409d5e910aabae29641ce4ee9cadd04c8d0f00593a9dd9368896ac829543b",
+  "scope": "Two expansion seeds only; same observed controller and tower fix, previous prices/mobility/AI caps. Full traces from the executed benchmark; round-limit is not a completed game.",
+  "rows": [
+    {
+      "seed": "balance-01",
+      "opening": "expansion",
+      "difficulty": "medium",
+      "map": "random",
+      "round": 241,
+      "winner": null,
+      "result": "round-limit",
+      "firstContact": 5,
+      "firstCombat": 8,
+      "firstVillage": 2,
+      "firstSiege": 44,
+      "commands": 9432,
+      "simulationMs": 67612,
+      "research": {
+        "recon": 2,
+        "basic_agriculture": 5,
+        "basic_woodworking": 6,
+        "shields": 10,
+        "archery": 14,
+        "rangers": 24,
+        "advanced_woodworking": 32,
+        "mining": 33,
+        "basic_metalworking": 35,
+        "siege": 37,
+        "catapults": 39,
+        "stoneworking": 59,
+        "roads": 61,
+        "siege_logistics": 64,
+        "trebuchets": 67,
+        "crossbows": 73
+      },
+      "recruits": {
+        "scout": 2,
+        "clubman": 6,
+        "archer": 14,
+        "shield": 17,
+        "ranger": 24,
+        "catapult": 40
+      },
+      "fielded": {
+        "clubman": 1,
+        "scout": 2,
+        "shield": 10,
+        "archer": 14,
+        "ranger": 24,
+        "catapult": 40,
+        "trebuchet": 69
+      },
+      "starved": {
+        "player": 0,
+        "enemy": 0
+      },
+      "playerCities": 5,
+      "enemyCities": 4
+    },
+    {
+      "seed": "balance-02",
+      "opening": "expansion",
+      "difficulty": "medium",
+      "map": "random",
+      "round": 126,
+      "winner": "enemy",
+      "result": "enemy",
+      "firstContact": 7,
+      "firstCombat": 8,
+      "firstVillage": 2,
+      "firstSiege": 43,
+      "commands": 3839,
+      "simulationMs": 29474,
+      "research": {
+        "recon": 2,
+        "basic_agriculture": 5,
+        "basic_woodworking": 6,
+        "shields": 8,
+        "archery": 10,
+        "rangers": 13,
+        "advanced_woodworking": 17,
+        "mining": 18,
+        "basic_metalworking": 20,
+        "siege": 22,
+        "catapults": 24,
+        "stoneworking": 43,
+        "roads": 45,
+        "siege_logistics": 67,
+        "trebuchets": 71,
+        "crossbows": 80
+      },
+      "recruits": {
+        "scout": 2,
+        "clubman": 6,
+        "archer": 11,
+        "shield": 23,
+        "catapult": 34,
+        "ranger": 43
+      },
+      "fielded": {
+        "clubman": 1,
+        "scout": 2,
+        "shield": 8,
+        "archer": 11,
+        "ranger": 13,
+        "catapult": 34,
+        "trebuchet": 73
+      },
+      "starved": {
+        "player": 0,
+        "enemy": 0
+      },
+      "playerCities": 0,
+      "enemyCities": 9
+    }
+  ]
+}

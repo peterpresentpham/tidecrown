@@ -4,16 +4,16 @@ export type BuildingId='market'|'farm'|'lumber'|'granary'|'stable'|'workshop'|'f
 export type Building={name:string;cost:Resource;description:string;tech:TechnologyId;group:'economy'|'military'|'defense';requires?:BuildingId};
 const b=(name:string,gold:number,wood:number,stone:number,description:string,tech:TechnologyId,group:Building['group']='economy',requires?:BuildingId):Building=>({name,cost:{gold,wood,stone,food:0},description,tech,group,requires});
 export const BUILDINGS:Record<BuildingId,Building>={
- farm:b('Nông trại',12,10,0,'+4 lương/lượt','basic_agriculture'),
+ farm:b('Nông trại',12,8,0,'+4 lương/lượt','basic_agriculture'),
  granary:b('Kho lương',10,8,0,'+1 lương; bỏ 1 lương duy trì thành','granary'),
- lumber:b('Xưởng gỗ',12,8,0,'+3 gỗ/lượt','basic_woodworking'),
+ lumber:b('Xưởng gỗ',12,6,0,'+3 gỗ/lượt','basic_woodworking'),
  market:b('Chợ',18,10,0,'+4 vàng; thưởng kết nối đường tối đa +4','commerce'),
  workshop:b('Xưởng cơ khí',18,15,0,'+2 gỗ; tuyển lính nỏ và công binh','advanced_woodworking','military'),
  stable:b('Chuồng ngựa',18,12,0,'Tuyển kỵ nhẹ, cung kỵ và kỵ sĩ','horses','military'),
  forge:b('Lò rèn',12,8,8,'Chế tạo lính giáo và thương dài','basic_metalworking','military'),
  iron_forge:b('Lò rèn sắt',18,8,12,'Chế tạo kiếm binh; thay lò rèn','ironworking','military','forge'),
  steelworks:b('Xưởng thép',24,12,18,'Tuyển quân giáp nặng; thay lò rèn sắt','steel','military','iron_forge'),
- siege_workshop:b('Xưởng công thành',22,18,10,'Chế tạo ballista, catapult và trebuchet','siege','military'),
+ siege_workshop:b('Xưởng công thành',22,14,10,'Chế tạo ballista, catapult và trebuchet','siege','military'),
  wall:b('Tường thành',14,5,18,'Tối đa công sự +20, xây xong +20 công sự','walls','defense'),
  tower:b('Tháp canh',18,10,15,'Tầm nhìn 3; bắn một địch đầu lượt; −1 vàng duy trì','towers','defense','wall'),
  port:b('Cảng',15,15,5,'Tuyển tàu ở nước kề thành; cần thành ven biển','naval','military'),

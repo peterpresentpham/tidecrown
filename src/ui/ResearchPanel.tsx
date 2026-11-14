@@ -36,10 +36,10 @@ export function ResearchPanel({state,selected,onSelect,onClose,onResearch}:{stat
  const ready=all.filter(t=>statuses[t.id].kind==='ready');
  const pick=(id:TechnologyId,ensureVisible=false)=>{
   onSelect(id);
-  if(ensureVisible){setBranch('all');setFilter('all');setQuery('');if(route&&!route.has(id))setGoal(null);pendingFocus.current=id;requestAnimationFrame(()=>{const el=nodes.current.get(id);if(el&&pendingFocus.current===id){pendingFocus.current=null;el.scrollIntoView({behavior:'smooth',block:'nearest'});el.querySelector<HTMLButtonElement>('.research-card-select')?.focus({preventScroll:true});}});}
+  if(ensureVisible){setBranch('all');setFilter('all');setQuery('');if(route&&!route.has(id))setGoal(null);pendingFocus.current=id;requestAnimationFrame(()=>{const el=nodes.current.get(id);if(el&&pendingFocus.current===id){pendingFocus.current=null;el.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest'});el.querySelector<HTMLButtonElement>('.research-card-select')?.focus({preventScroll:true});}});}
  };
  const attach=(id:TechnologyId,el:HTMLElement|null)=>{
-  if(el){nodes.current.set(id,el);if(pendingFocus.current===id){pendingFocus.current=null;requestAnimationFrame(()=>{el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});el.querySelector<HTMLButtonElement>('.research-card-select')?.focus({preventScroll:true});});}}
+  if(el){nodes.current.set(id,el);if(pendingFocus.current===id){pendingFocus.current=null;requestAnimationFrame(()=>{el.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest',inline:'nearest'});el.querySelector<HTMLButtonElement>('.research-card-select')?.focus({preventScroll:true});});}}
   else nodes.current.delete(id);
  };
  const visible=all.filter(t=>(branch==='all'||t.branch===branch)&&(!query||normalize(`${t.name} ${t.effect} ${benefits(t.id)}`).includes(normalize(query)))&&(!route||route.has(t.id))&&(filter==='all'||filter==='ready'&&statuses[t.id].kind==='ready'||filter==='complete'&&statuses[t.id].kind==='complete'||filter==='unlocked'&&!['locked','complete'].includes(statuses[t.id].kind)));

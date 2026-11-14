@@ -1,3 +1,4 @@
+import {BALANCE} from '../data/balance';
 import { researchStatus } from './research';
 import { UNITS, RECRUITABLE_UNITS, UNIT_UPGRADES, isShip, isSiege, type UnitType } from '../data/units';
 import { BUILDINGS, IMPROVEMENTS, type BuildingId, type ImprovementId } from '../data/buildings';
@@ -80,9 +81,9 @@ function initialGame(settings:GameSettings,factions:FactionId[],tiles:Tile[],cit
     bankrupt:factionRecord(()=>false),technologies:factionRecord(()=>[]),research:factionRecord(()=>null)};
   factions.forEach((f,i)=>addUnit(s,'clubman',starts[i],f));refreshKnowledge(s);return s;
 }
-export function createGame(options:Partial<Omit<GameSettings,'map'>>={}):State{
-  const settings:GameSettings={seed:options.seed?.trim().slice(0,32)||newSeed(),aiCount:options.aiCount??1,difficulty:options.difficulty??'medium',map:'random'};
-  if(![1,2,3].includes(settings.aiCount)||!['easy','medium','hard'].includes(settings.difficulty))throw new Error('Thiết lập ván không hợp lệ.');
+export function createGame(options:Partial<Omit<GameSettings,'map'>>&{map?:'random'|'water'}={}):State{
+  const settings:GameSettings={seed:options.seed?.trim().slice(0,32)||newSeed(),aiCount:options.aiCount??1,difficulty:options.difficulty??'medium',map:options.map??'random'};
+  if(!['random','water'].includes(settings.map)||![1,2,3].includes(settings.aiCount)||!['easy','medium','hard'].includes(settings.difficulty))throw new Error('Thiết lập ván không hợp lệ.');
   const factions=FACTION_IDS.slice(0,settings.aiCount+1);
   const {tiles,cities,starts}=generateMap(settings,factions);
   return initialGame(settings,factions,tiles,cities,starts);
@@ -92,7 +93,7 @@ export const livingFactions=(s:State)=>s.factions.filter(f=>s.cities.some(c=>c.o
 export type ActionEvent={id:number;kind:'move'|'attack'|'heal'|'repair'|'build'|'board'|'land';actor:string;actorType?:UnitType;owner:FactionId;from:string;to:string;path?:string[];target?:string;damage:number;retaliation:number;fortDamage:number;dead?:string[];viewers?:FactionId[];originViewers?:FactionId[]};
 export const hasTech=(s:State,owner:FactionId,id:TechnologyId)=>s.technologies[owner].includes(id);
 export const buildingsFor=(c:City):BuildingId[]=>[...new Set([...(c.buildings??[]),...(c.specialty?[c.specialty]:[])])];
-export function hasBuilding(c:City,id:string){const all=buildingsFor(c);return all.includes(id as BuildingId)||(id==='forge'&&all.some(b=>['iron_forge','steelworks'].includes(b)))||(id==='iron_forge'&&all.includes('steelworks'))||(id==='port'&&all.includes('shipyard'));}
+export function hasBuilding(c:City,id:string){const all=buildingsFor(c);return all.includes(id as BuildingId)||(id==='forge'&&all.some(b=>['iron_forge','steelworks'].includes(b)))||(id==='iron_forge'&&all.includes('steelworks'))||(id==='port'&&all.includes('shipyard'))||(id==='wall'&&all.includes('tower'));}
 export const maxFort=(c:City)=>20+(hasBuilding(c,'wall')?20:0);
 export function statsFor(_s:State,unit:Pick<Unit,'type'|'owner'>&Partial<Unit>){
  const d=UNITS[unit.type];return {...d,armor:Math.max(0,d.armor-(unit.disoriented?1:0)),range:d.range+(unit.deployed&&unit.type!=='trebuchet'?1:0)};
@@ -203,6 +204,27 @@ export function buildingReason(s:State,c:City,id:BuildingId):string|null{
  const used=buildingsFor(c).filter(id=>BUILDINGS[id].group===b.group).length;
  if(!b.requires&&b.group!=='defense'&&used>=2+c.level)return `Hết chỗ ${b.group==='economy'?'kinh tế':'quân sự'}; nâng cấp thành để thêm chỗ.`;
  return affordable(s.resources[c.owner!],b.cost)?null:'Không đủ tài nguyên xây dựng.';
+}
+/** Read-only city action checks shared by execution and the management UI. */
+function cityActionReason(s:State,c:City):string|null{
+ if(s.winner)return 'Ván chơi đã kết thúc.';
+ if(c.owner!==s.turn)return 'Thành này không thuộc phe đang chơi.';
+ if(c.stability||c.job?.type==='found')return 'Thành đang ổn định hoặc xây dựng.';
+ return null;
+}
+export function upgradeReason(s:State,c:City):string|null{
+ const why=cityActionReason(s,c);if(why)return why;
+ if(c.level>=3)return 'Đã đạt cấp tối đa.';
+ if(c.job)return 'Thành đang xây dựng.';
+ if(c.constructed)return 'Thành đã xây/cải tạo trong lượt này.';
+ return affordable(s.resources[s.turn],upgradeCost(s,c))?null:'Không đủ lương nâng thành.';
+}
+export function repairReason(s:State,c:City):string|null{
+ const why=cityActionReason(s,c);if(why)return why;
+ if(c.repaired)return 'Thành đã sửa công sự trong lượt này.';
+ if(c.fort>=maxFort(c))return 'Công sự đã đầy.';
+ if(s.units.some(u=>!u.aboard&&u.owner!==c.owner&&distance(tileAt(s,u.tile),tileAt(s,c.tile))<=1))return 'Không thể sửa khi có quân địch kề thành.';
+ return affordable(s.resources[s.turn],REPAIR_COST)?null:'Không đủ tài nguyên sửa thành.';
 }
 export function improvementReason(s:State,cmd:Extract<Command,{type:'improve'}>):string|null{
  const {tile:id,improvement:kind}=cmd,t=tileAt(s,id),def=IMPROVEMENTS[kind],u=s.units.find(u=>u.id===cmd.unit),c=s.cities.find(c=>c.id===cmd.city);
@@ -362,10 +384,10 @@ export function execute(original:State,cmd:Command):{state:State;error?:string}{
  if(c.stability||c.job?.type==='found')return fail('Thành đang ổn định hoặc xây dựng.');
  if(cmd.type==='recruit'){const why=recruitReason(s,c,cmd.unitType);if(why)return fail(why);if(!recruitTiles(s,c,cmd.unitType).some(t=>t.id===cmd.to))return fail('Chọn ô tuyển hợp lệ tại thành hoặc nước kề cảng.');spend(s,UNITS[cmd.unitType].cost);c.recruited=true;addUnit(s,cmd.unitType,cmd.to,s.turn,false);log(s,`${c.name} tuyển ${UNITS[cmd.unitType].name}. Sẵn sàng ở lượt sau.`);}
  else if(cmd.type==='build'){
-  if(cmd.building==='upgrade'){if(c.level>=3||c.job||c.constructed)return fail('Không thể nâng thành trong lượt này.');const cost=upgradeCost(s,c);if(!affordable(s.resources[s.turn],cost))return fail('Không đủ lương nâng thành.');spend(s,cost);c.level++;c.constructed=true;log(s,`${c.name} lên cấp ${c.level}; mở thêm chỗ xây, +5 vàng/lượt.`);}
+  if(cmd.building==='upgrade'){const why=upgradeReason(s,c);if(why)return fail(why);const cost=upgradeCost(s,c);spend(s,cost);c.level++;c.constructed=true;log(s,`${c.name} lên cấp ${c.level}; mở thêm chỗ xây, +5 vàng/lượt.`);}
   else{const why=buildingReason(s,c,cmd.building);if(why)return fail(why);const b=BUILDINGS[cmd.building];spend(s,b.cost);c.buildings=buildingsFor(c).filter(id=>id!==b.requires);c.specialty=null;c.buildings.push(cmd.building);c.constructed=true;if(cmd.building==='wall')c.fort=Math.min(maxFort(c),c.fort+20);log(s,`${c.name}: hoàn tất ${b.name}.`);}
  }else if(cmd.type==='repair'){
-  if(c.repaired||c.fort>=maxFort(c))return fail('Chưa cần sửa hoặc đã sửa trong lượt này.');if(s.units.some(u=>!u.aboard&&u.owner!==c.owner&&distance(tileAt(s,u.tile),tileAt(s,c.tile))<=1))return fail('Không thể sửa khi có quân địch kề thành.');if(!affordable(s.resources[s.turn],REPAIR_COST))return fail('Không đủ tài nguyên sửa thành.');spend(s,REPAIR_COST);c.fort=Math.min(maxFort(c),c.fort+5);c.repaired=true;
+  const why=repairReason(s,c);if(why)return fail(why);spend(s,REPAIR_COST);c.fort=Math.min(maxFort(c),c.fort+BALANCE.cityRepair);c.repaired=true;
  }
  return finish();
 }

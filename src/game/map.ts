@@ -1,11 +1,12 @@
+import {generateWaterMap} from './waterMap';
 import type { City, FactionId, GridPoint, Tile, Terrain } from './engine';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
-export type GameSettings = { seed:string; aiCount:1|2|3; difficulty:Difficulty; map:'random'|'classic' };
+export type GameSettings = { seed:string; aiCount:1|2|3; difficulty:Difficulty; map:'random'|'water'|'classic' };
 export const DIFFICULTIES = {
   easy:{name:'Dễ',description:'Ít quân hơn, nghiên cứu chậm. Phù hợp làm quen.',armyPerCity:2,maxArmy:6},
-  medium:{name:'Vừa',description:'Phát triển và mở rộng đều, đội quân đa dạng.',armyPerCity:3,maxArmy:10},
-  hard:{name:'Khó',description:'Đông quân, ưu tiên mục tiêu yếu và bảo vệ thành.',armyPerCity:4,maxArmy:16},
+  medium:{name:'Vừa',description:'Phát triển và mở rộng đều, đội quân đa dạng.',armyPerCity:3,maxArmy:8},
+  hard:{name:'Khó',description:'Đông quân, ưu tiên mục tiêu yếu và bảo vệ thành.',armyPerCity:4,maxArmy:12},
 } as const;
 export const newSeed=()=>Math.random().toString(36).slice(2,10);
 export function randomSource(seed:string){
@@ -18,6 +19,7 @@ const distance=(a:GridPoint,b:GridPoint)=>Math.max(Math.abs(a.q-b.q),Math.abs(a.
 const names=['Đồng Cỏ','Thành Cổ','Bắc Lâm','Nam Hải','Trúc Sơn','Bình Minh','Vân Hồ','An Khê','Thanh Hà','Đông Lâm','Tây Giang','Ngọc Sơn'];
 /** Seeded mainland: every fort is joined by walkable roads before coast decoration. */
 export function generateMap(settings:GameSettings,factions:FactionId[]):{tiles:Tile[];cities:City[];starts:string[]}{
+  if(settings.map==='water')return generateWaterMap(settings,factions,randomSource(settings.seed));
   const rng=randomSource(settings.seed),pick=(n:number)=>Math.floor(rng()*n);
   const flipQ=rng()<.5?-1:1,flipR=rng()<.5?-1:1;
   // Shared jitter preserves equal safe openings. The center village creates a

@@ -134,7 +134,7 @@ test('new city requires distance, friendly presence and funds, then completes', 
 });
 test('repair requires no adjacent enemy and respects once per turn', () => {
   let s = createGame(); s.cities[0].fort = 8;
-  s = apply(s, { type: 'repair', city: 'c1' }); assert.equal(s.cities[0].fort, 13);
+  s = apply(s, { type: 'repair', city: 'c1' }); assert.equal(s.cities[0].fort, 10);
   assert.ok(execute(s, { type: 'repair', city: 'c1' }).error);
   s = round(s); s.units.find(u => u.owner === 'enemy')!.tile = '-3,2';
   assert.ok(execute(s, { type: 'repair', city: 'c1' }).error);

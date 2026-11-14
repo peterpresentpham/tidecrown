@@ -1,0 +1,161 @@
+[
+  {
+    "aiCount": 1,
+    "difficulty": "medium",
+    "round": 47,
+    "winner": "enemy",
+    "commands": 440,
+    "milestones": {
+      "scout_ship": 13,
+      "transport": 24,
+      "board": 25,
+      "land": 26
+    },
+    "counts": {
+      "board": 6,
+      "land": 4
+    },
+    "ships": [
+      {
+        "type": "scout_ship",
+        "owner": "enemy",
+        "tile": "-11,-4"
+      },
+      {
+        "type": "transport",
+        "owner": "enemy",
+        "tile": "-1,7"
+      }
+    ],
+    "tech": [
+      "recon",
+      "basic_agriculture",
+      "basic_woodworking",
+      "naval",
+      "transports",
+      "archery",
+      "advanced_woodworking",
+      "sailing",
+      "mining",
+      "basic_metalworking",
+      "siege",
+      "catapults",
+      "granary",
+      "advanced_agriculture",
+      "husbandry",
+      "horses",
+      "warships"
+    ],
+    "resources": {
+      "gold": 379,
+      "food": 94,
+      "wood": 20,
+      "stone": 246
+    }
+  },
+  {
+    "aiCount": 2,
+    "difficulty": "easy",
+    "round": 24,
+    "winner": "enemy2",
+    "commands": 375,
+    "milestones": {
+      "scout_ship": 12,
+      "transport": 20,
+      "board": 23
+    },
+    "counts": {
+      "board": 3
+    },
+    "ships": [
+      {
+        "type": "scout_ship",
+        "owner": "enemy",
+        "tile": "14,-8"
+      },
+      {
+        "type": "scout_ship",
+        "owner": "enemy2",
+        "tile": "0,-2"
+      },
+      {
+        "type": "transport",
+        "owner": "enemy",
+        "tile": "-1,8"
+      },
+      {
+        "type": "transport",
+        "owner": "enemy2",
+        "tile": "1,7"
+      }
+    ],
+    "tech": [
+      "recon",
+      "basic_woodworking",
+      "naval",
+      "transports",
+      "archery",
+      "mining"
+    ],
+    "resources": {
+      "gold": 169,
+      "food": 79,
+      "wood": 20,
+      "stone": 98
+    }
+  },
+  {
+    "aiCount": 3,
+    "difficulty": "hard",
+    "round": 25,
+    "winner": "enemy2",
+    "commands": 542,
+    "milestones": {
+      "scout_ship": 12,
+      "transport": 17,
+      "board": 24,
+      "land": 25
+    },
+    "counts": {
+      "board": 1,
+      "land": 1
+    },
+    "ships": [
+      {
+        "type": "transport",
+        "owner": "enemy2",
+        "tile": "0,6"
+      },
+      {
+        "type": "scout_ship",
+        "owner": "enemy3",
+        "tile": "1,-5"
+      },
+      {
+        "type": "scout_ship",
+        "owner": "enemy2",
+        "tile": "1,8"
+      },
+      {
+        "type": "transport",
+        "owner": "enemy3",
+        "tile": "-1,-6"
+      }
+    ],
+    "tech": [
+      "recon",
+      "basic_agriculture",
+      "basic_woodworking",
+      "naval",
+      "archery",
+      "transports",
+      "advanced_woodworking"
+    ],
+    "resources": {
+      "gold": 74,
+      "food": 138,
+      "wood": 1,
+      "stone": 98
+    }
+  }
+]

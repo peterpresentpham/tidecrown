@@ -1,3 +1,4 @@
+import {BALANCE} from './balance';
 import type { Resource } from '../game/engine';
 export const BRANCHES={economy:'Lương thực & hạ tầng',materials:'Tài nguyên & luyện kim',infantry:'Bộ binh',ranged:'Cung & nỏ',cavalry:'Trinh sát & kỵ binh',siege:'Công trình & công thành',naval:'Hàng hải'} as const;
 export type Branch=keyof typeof BRANCHES;
@@ -51,7 +52,7 @@ const rows=[
 ] as const;
 export type TechnologyId=typeof rows[number][0];
 export type Technology={id:TechnologyId;code:string;name:string;branch:Branch;tier:number;requires:TechnologyId[];cost:Resource;turns:number;effect:string};
-export const TECHNOLOGIES=Object.fromEntries(rows.map(([id,code,name,branch,tier,requires,effect])=>[id,{id,code,name,branch,tier,requires:[...requires],cost:{gold:[0,5,12,24,40][tier],food:0,wood:tier>=3&&['siege','naval'].includes(branch)?8:0,stone:tier===4&&branch==='siege'?5:0},turns:tier===1?1:tier===4?3:2,effect}])) as Record<TechnologyId,Technology>;
+export const TECHNOLOGIES=Object.fromEntries(rows.map(([id,code,name,branch,tier,requires,effect])=>[id,{id,code,name,branch,tier,requires:[...requires],cost:{gold:BALANCE.technologyGold[tier],food:0,wood:tier>=3&&['siege','naval'].includes(branch)?BALANCE.advancedResearchWood:0,stone:tier===4&&branch==='siege'?5:0},turns:tier===1?1:tier===4?3:2,effect}])) as Record<TechnologyId,Technology>;
 export { UNIT_TECH, RECRUITABLE_UNITS } from './units';
 
 /** Explain the reason for every dependency; roots have no prerequisite. */

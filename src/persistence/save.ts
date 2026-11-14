@@ -13,7 +13,7 @@ export function parseSave(raw: string | null): State | null {
   try {
     const data=JSON.parse(raw);
     const s=data as State;
-    if(!s.settings||!['easy','medium','hard'].includes(s.settings.difficulty)||![1,2,3].includes(s.settings.aiCount)||typeof s.settings.seed!=='string'||s.settings.seed.length<1||s.settings.seed.length>32||!['random','classic'].includes(s.settings.map))return null;
+    if(!s.settings||!['easy','medium','hard'].includes(s.settings.difficulty)||![1,2,3].includes(s.settings.aiCount)||typeof s.settings.seed!=='string'||s.settings.seed.length<1||s.settings.seed.length>32||!['random','water','classic'].includes(s.settings.map))return null;
     if(s.settings.map==='classic'&&s.settings.aiCount!==1)return null;
     if(!Array.isArray(s.factions)||s.factions.length!==s.settings.aiCount+1||s.factions.some((f,i)=>f!==FACTION_IDS[i])||!s.factions.includes(s.turn))return null;
     if (s.version !== 7 || !factions.includes(s.turn) || (s.winner !== null && !s.factions.includes(s.winner)) || !nonnegativeInt(s.round) || s.round < 1 || !nonnegativeInt(s.serial)) return null;
