@@ -3,7 +3,7 @@ import './gallery.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { type FactionId, FACTIONS, type State, UNITS, type UnitType } from '../../game/engine';
-import { World } from '../../render/World';
+import { DEFAULT_ZOOM, World } from '../../render/World';
 import type { GraphicsQuality } from '../playbackPolicy';
 import { type Action, animate, buildScene, type Scene, type SceneId, UNIT_TYPES } from './scenes';
 
@@ -53,7 +53,7 @@ export function Gallery() {
       { quality }
     );
     w.focus(scene.focus);
-    w.zoom(scene.zoom);
+    w.zoom(scene.zoom / DEFAULT_ZOOM);
     world.current = w;
     return () => {
       window.clearTimeout(restore.current);
@@ -72,7 +72,8 @@ export function Gallery() {
     if (!w) return;
     w.resetCamera();
     w.focus(tile);
-    w.zoom(tab === 'units' ? 1.7 : 1.15);
+    // Scene zooms are absolute; the world opens at DEFAULT_ZOOM.
+    w.zoom((tab === 'units' ? 2.4 : 1.15) / DEFAULT_ZOOM);
     setFocused(tile);
   };
 
@@ -186,7 +187,7 @@ export function Gallery() {
                 if (!w) return;
                 w.resetCamera();
                 w.focus(scene.focus);
-                w.zoom(scene.zoom);
+                w.zoom(scene.zoom / DEFAULT_ZOOM);
                 setFocused(null);
               }}
             >

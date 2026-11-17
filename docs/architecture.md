@@ -15,12 +15,11 @@ Cập nhật 14/11/2026. Game chơi đơn phía client: TypeScript, React, Vite,
 | `src/game/threats.ts` | Vùng nguy hiểm ước lượng từ quân địch đang thấy |
 | `src/data/` | Công nghệ, đơn vị, công trình/cải tạo, tham số cân bằng |
 | `src/ai/` | `ai.ts` điều phối; `exploration`, `tactics`, `development`, `naval` |
-| `src/render/` | `World.ts` (camera, picking, cảnh, hoạt ảnh, vòng đời GPU), `characters.ts` (lính có xương và animation), `unitModels.ts`, `modelLibrary.ts` (mô hình tĩnh), `visualIdentity.ts` (màu/biểu tượng phe) |
+| `src/render/` | `World.ts` (camera, picking, cảnh, hoạt ảnh, vòng đời GPU), `voxel.ts` (lính voxel và hoạt ảnh), `voxelScenery.ts` (cảnh vật voxel), `voxelGrid.ts` (lưới và tạo mesh), `characters.ts` (`Character`, tư thế), `unitModels.ts`, `visualIdentity.ts` (màu/biểu tượng phe) |
 | `src/ui/` | HUD, thiết lập, thành/quân, cây công nghệ, tùy chọn, phát lượt AI |
 | `src/persistence/save.ts` | Parse/validate save schema 8, localStorage, bảo vệ dữ liệu lỗi |
 | `tests/` | Test luật/AI/UI logic (`*.test.ts`), helper scenario, trang kiểm tra trực quan |
 | `scripts/selfplay.ts` | Máy tự chơi nhiều ván để đo nhịp và khả năng kết thúc |
-| `scripts/models/` | Nướng mô hình tĩnh CC0 thành `models.bin`; đóng gói nhân vật thành `assets/units/*.glb` |
 
 ## Luồng lệnh và thông tin ẩn
 
@@ -40,23 +39,13 @@ Tùy chọn UI lưu riêng (`nation-ui-preferences-v1`), không vào save gamepl
 
 ## Mô hình 3D
 
-Hai loại mô hình, đều CC0:
+Mọi mô hình là voxel, dựng hoàn toàn bằng code lúc chạy; repo không chứa file mô hình nào. Một voxel cạnh 0,075 (một ô 1,9 ≈ 25 voxel). Ô mang giá trị `TEAM` lấy màu phe.
 
-- **Tĩnh** (cây, núi, đồi, đá, nhà, thành, tường, cải tạo, máy công thành, tàu): "nướng" vào [`src/render/assets/models.bin`](../src/render/assets/models.bin) (~2 MB) và nạp một lần ([modelLibrary.ts](../src/render/modelLibrary.ts)). Texture bảng màu thành màu đỉnh nên mọi mô hình dùng chung một vật liệu, shader sương mù và gộp mesh. Vật liệu `Main` (cờ, mái) được tô màu phe lúc chạy; nhà chính của thành không có `Main` nên có thêm lá cờ phe.
-- **Nhân vật** (mọi quân bộ và kỵ): các file GLB nhỏ trong [`src/render/assets/units/`](../src/render/assets/units/) (~8,7 MB), nạp lười qua [characterAssets.ts](../src/render/characterAssets.ts). [characters.ts](../src/render/characters.ts) ghép thân trang phục + đầu + tóc (gắn lại vào xương trang phục), mũ/giáp vai, vũ khí trên xương tay, ngựa nếu có; mỗi lính một `AnimationMixer`. Tư thế: đứng, đi, đánh, trúng đòn, chết, làm việc (sửa/chữa trị). Màu phe nằm ở kênh alpha của texture trang phục (vải xanh của Ranger, áo sáng của Peasant) và mặt khiên.
+- **Lưới chung** ([voxelGrid.ts](../src/render/voxelGrid.ts)): `Grid` (hộp, khối elip, khoét, ghép) và `meshGrid` chỉ sinh các mặt lộ ra, kèm màu đỉnh. Cảnh vật dùng greedy meshing (gộp mặt cùng màu); lính để mỗi voxel một mặt, sắc độ hơi lệch như tranh voxel vẽ tay.
+- **Cảnh vật** ([voxelScenery.ts](../src/render/voxelScenery.ts)): cây thông và cây tán, rừng, bụi, đá, núi (bản đồ độ cao, dải đá, tuyết), đồi, ruộng, mỏ, bãi đá, gỗ, thùng, hàng rào, giếng, nhà, thành cấp 1–3, tường gỗ và đá, tháp, chợ, kho, cối xay, cảng, lò rèn, xưởng gỗ, chuồng ngựa, tàn tích, máy công thành (cần ném có trục quay riêng) và tàu. Tên và giao diện (`has`, `geometry(name, team)`, `anchor`) giữ như thư viện mô hình cũ. Mỗi mô hình được tạo lưới một lần cho mỗi màu phe, World nhận bản sao và dùng chung một vật liệu màu đỉnh, shader sương mù và gộp mesh.
+- **Lính** ([voxel.ts](../src/render/voxel.ts)): đầu to, thân, tay, chân, áo choàng là các khối cứng gắn trên khớp; mỗi loại quân có mũ, vũ khí, khiên/cung/nỏ và ngựa voxel riêng. Hoạt ảnh là clip keyframe sinh sẵn (đứng, đi, chém, đâm, bắn cung, bắn nỏ, trúng đòn, ngã, làm việc), chạy qua `Character` ([characters.ts](../src/render/characters.ts)) với một `AnimationMixer` cho người và một cho ngựa. Mảnh lưới dùng chung giữa các lính cùng kiểu và cùng phe (`userData.shared`). Ở mức đồ họa "Đầy đủ" lính dùng bản chi tiết cao: lưới phóng ×2 (voxel 0,0375), gọt cạnh thành khối bo bậc, nướng dải sắc (mặt trên sáng ngả ấm, mặt dưới tối ngả lạnh), thêm găng tay to, giáp vai, ủng cổ gập, vạt áo xòe, ống tên và dây đeo chéo cho lính cung, bao kiếm, áo choàng dài gấu răng cưa, tóc mái, khiên hình giọt nước, khăn che mặt cho kiểm lâm; rồi vẽ thêm mắt có đốm sáng, lông mày, mũi, tai, viền áo, cúc, khóa thắt lưng, cổ ủng, cạnh sáng trên kim loại, đinh tán khiên, dây cương ngựa; lưới được gộp mặt và có bóng khe ở góc khối (AO). Mức "Vừa" và "Thấp" dùng bản thường; đổi mức đồ họa sẽ dựng lại lính.
 
-Khi chưa nạp xong hoặc lỗi, World chỉ vẽ đĩa màu phe/nhãn rồi tự dựng lại khi mô hình sẵn sàng.
-
-| Nguồn | Dùng cho | Giấy phép |
-| --- | --- | --- |
-| [Quaternius Ultimate Fantasy RTS](https://quaternius.com) | Nhà chính, nhà, chợ, kho, tháp, cối xay, tường, cảng, mỏ, ruộng, rừng, núi | CC0 |
-| [Quaternius Ultimate Nature](https://quaternius.com), [Medieval Village](https://quaternius.com) | Cây lẻ, bụi, đá; lò rèn, xưởng gỗ, chuồng ngựa, giếng, hàng rào | CC0 |
-| [Quaternius Modular Character Outfits – Fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), [Universal Base Characters](https://quaternius.itch.io/universal-base-characters), [Universal Animation Library](https://quaternius.itch.io/universal-animation-library) | Thân lính (Ranger, Peasant), đầu, tóc, animation | CC0 |
-| [Quaternius Animated Knight](https://quaternius.com), [Medieval Weapons](https://quaternius.com) | Mũ, giáp vai; kiếm, giáo, rìu, búa, cung, khiên | CC0 |
-| [Quaternius Ultimate Animated Animals](https://quaternius.com), Ships | Ngựa nâu/trắng; thuyền buồm, thuyền Viking, tàu ba cột | CC0 |
-| [Kenney Castle Kit](https://kenney.nl/assets/castle-kit) | Ballista, catapult, trebuchet | CC0 |
-
-Đổi mô hình: tải các gói vào một thư mục theo bố cục ghi đầu [build.ts](../scripts/models/build.ts) (`rts/`, `nature/`, `village/`, `extra/`) và [characters.ts](../scripts/models/characters.ts) (`characters/{outfits,ubc,ual}`, `extra/`, `weapons/`, `knight/`), rồi chạy `npm run models -- <thư-mục>` (mô hình tĩnh) hoặc `npm run characters -- <thư-mục>` (nhân vật). Xem kết quả ở `/gallery` và `/tests/v2/models.html`. `node --import tsx scripts/models/inspect.ts <file>` in mesh, xương và animation của một file nguồn. Gói nguồn không lưu trong repo.
+Xem tất cả ở `/gallery` (quân lính, hoạt ảnh, cảnh quan, thành và công trình) và `/tests/v2/models.html` (mọi mô hình cảnh vật trên một lưới, trục quay màu đỏ).
 
 ## Lệnh phát triển
 

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { createGame, execute, type State } from '../src/game/engine';
 import { SAVE_KEY } from '../src/persistence/save';
-import { runAIStep } from '../src/ui/aiTurnStep';
+import { playerSees, runAIBatch, runAIStep } from '../src/ui/aiTurnStep';
 import {
   actionSeconds,
   aiDecisionDelayMs,
@@ -72,10 +72,9 @@ test('fast mode shortens only AI playback; reduced motion always wins; safety li
       'hidden actions never wait longer than visible ones'
     );
     assert.ok(aiDecisionDelayMs(fast, false) > 0, 'still yields to the browser between commands');
-    assert.equal(
-      aiDecisionDelayMs(normal, false),
-      aiDecisionDelayMs(normal, true),
-      'normal speed keeps its pace'
+    assert.ok(
+      aiDecisionDelayMs(normal, false) < aiDecisionDelayMs(normal, true),
+      'hidden actions do not wait at normal speed either'
     );
     assert.ok(actionSeconds(fast, 'enemy') <= actionSeconds(normal, 'enemy'));
     assert.equal(
@@ -157,4 +156,33 @@ test('queued AI callbacks cannot overwrite a new game, a newer step or the playe
   );
   const finished = { ...scheduled, winner: 'player' as const };
   assert.equal(runScheduledAIStep(finished, finished), finished);
+});
+
+test('hidden AI commands run in one batch that stops at the first visible one, with the same result', () => {
+  let s = createGame({ seed: 'batch-1', aiCount: 3, difficulty: 'medium' });
+  for (let round = 0; round < 6 && !s.winner; round++) {
+    const ended = execute(s, { type: 'end' }).state;
+    // Reference: one command at a time.
+    const single = playAIRound(ended).state;
+    // Batched with an unlimited budget: each batch ends on a visible command or the player's turn.
+    let b = ended,
+      batches = 0;
+    while (b.turn !== 'player' && !b.winner) {
+      b = runAIBatch(b, Infinity);
+      batches++;
+      assert.ok(b.turn === 'player' || b.winner || playerSees(b), 'a batch stopped while unseen');
+      assert.ok(batches < 2000);
+    }
+    assert.deepEqual(b, single, `round ${round}: batching must not change the game`);
+    s = b;
+  }
+});
+
+test('a batch respects its time budget and always makes progress', () => {
+  const start = execute(createGame({ seed: 'batch-2', aiCount: 3 }), { type: 'end' }).state;
+  let clock = 0;
+  // Every reading of the clock advances 10 ms: a 12 ms budget allows one extra command at most.
+  const next = runAIBatch(start, 12, () => (clock += 10));
+  assert.notEqual(next, start);
+  assert.ok(clock <= 40);
 });

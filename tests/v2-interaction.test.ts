@@ -3,8 +3,8 @@ import test from 'node:test';
 
 import { type ActionEvent, createClassicGame, execute } from '../src/game/engine';
 import { moveUndo, undoMove } from '../src/game/undo';
-import { refreshKnowledge } from '../src/game/visibility';
-import { World } from '../src/render/World';
+import { observe, refreshKnowledge } from '../src/game/visibility';
+import { unseenEvents, World } from '../src/render/World';
 import { requiresConfirmation, TapGesture } from '../src/ui/interaction';
 import { troop } from './helpers/tacticalScenarios';
 
@@ -91,4 +91,23 @@ test('renderer drains every queued event in order and reports completion for the
   assert.deepEqual(completed, [1, 2, 3]);
   assert.equal(world.visual, null);
   assert.equal(world.visualQueue.length, 0);
+});
+test('renderer animates each event once across repeated syncs (reload, selection, AI steps)', () => {
+  const s = createClassicGame();
+  for (const t of s.tiles) t.terrain = 'grass';
+  s.cities[0].tile = '2,0';
+  s.cities[1].tile = '10,0';
+  s.units = [troop('scout', 'a', '0,0', 'player')];
+  refreshKnowledge(s);
+  const moved = execute(s, { type: 'move', unit: 'a', to: '1,0' }).state;
+  // A World opened on a saved state starts at its serial: nothing replays on reload.
+  assert.deepEqual(unseenEvents(moved, observe(moved, 'player'), moved.serial).events, []);
+  const first = unseenEvents(moved, observe(moved, 'player'), s.serial);
+  assert.deepEqual(
+    first.events.map((e) => e.id),
+    [moved.event!.id]
+  );
+  // The same state synced again (selection change, AI playback step) must not replay the move.
+  const again = unseenEvents(moved, observe(moved, 'player'), first.last);
+  assert.deepEqual(again.events, []);
 });

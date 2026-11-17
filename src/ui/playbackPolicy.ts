@@ -49,11 +49,12 @@ export type PlaybackContext = { aiSpeed: AISpeed; reducedMotion: boolean };
 
 /**
  * Pause before the next AI decision, counted after the previous visible animation has finished.
- * Fast mode does not linger on actions the player could not see; one frame keeps the UI responsive.
+ * Nothing lingers on actions the player could not see (those run in batches, see aiTurnStep);
+ * the minimal timeout still yields to the browser between batches.
  */
 export function aiDecisionDelayMs({ aiSpeed }: PlaybackContext, previousWasVisible = true): number {
-  if (aiSpeed !== 'fast') return 190;
-  return previousWasVisible ? 60 : 16;
+  if (!previousWasVisible) return 1;
+  return aiSpeed === 'fast' ? 60 : 190;
 }
 
 /**

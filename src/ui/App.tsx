@@ -492,7 +492,8 @@ export function App() {
       () => {
         if (!document.hidden) setState((current) => runScheduledAIStep(current, state));
       },
-      aiDecisionDelayMs(playback, !!view.event)
+      // Only this command's events count: `event` can still hold an older, already-shown one.
+      aiDecisionDelayMs(playback, (view.events?.length ?? 0) > 0)
     );
     return () => clearTimeout(timer);
   }, [state, restart, busy, pageHidden, preferences.aiSpeed]);

@@ -2,8 +2,8 @@ import * as THREE from 'three';
 
 import { UNITS } from '../data/units';
 import { FACTIONS, type Unit } from '../game/engine';
-import type { Character, CharacterLibrary } from './characters';
-import type { ModelLibrary } from './modelLibrary';
+import type { Character, CharacterSource } from './characters';
+import type { VoxelScenery } from './voxelScenery';
 
 type Builder = {
   mesh: (
@@ -15,16 +15,16 @@ type Builder = {
     z?: number
   ) => THREE.Mesh;
   box: (parent: THREE.Object3D, color: string, size: number[], position: number[]) => THREE.Mesh;
-  /** Baked siege engines and ships. */
-  library?: ModelLibrary | null;
+  /** Voxel siege engines and ships. */
+  library?: VoxelScenery | null;
   /** Adds a library model as a vertex-coloured mesh. */
   model?: (name: string, parent: THREE.Object3D, team?: string) => THREE.Mesh;
-  /** Skinned soldiers and riders. */
-  characters?: CharacterLibrary | null;
+  /** Voxel soldiers and riders. */
+  characters?: CharacterSource | null;
 };
 
 /**
- * A unit: an animated character (userData.character) for soldiers and riders, a baked model with a
+ * A unit: an animated voxel character (userData.character) for soldiers and riders, a voxel model with a
  * swinging arm or sail pivot (userData.weapon) for siege engines and ships, always on a faction
  * disc. Until the models have loaded only the disc is drawn.
  */

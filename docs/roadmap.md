@@ -15,7 +15,7 @@ Game chiến thuật 3D theo lượt, chơi đơn trên web: một thành/một 
 - Chiến đấu xác định: sát thương theo HP, vùng khống chế, giữ trận/dựng thương/ngắm bắn, Nghỉ, vây thành, tháp/tường; vận tải và đổ bộ.
 - AI dùng observation như người chơi: khám phá, phát triển, đội hình bộ, hải quân.
 - Đi–đánh một lần bấm, dự báo hai phía, hoàn tác bước đi, vùng nguy hiểm, tóm tắt lượt AI; cảm ứng chọn rồi xác nhận.
-- Mô hình 3D CC0 (Quaternius, Kenney): lính tỷ lệ người thật có xương và animation (đi, đánh, trúng đòn, chết), ngựa, máy, tàu, thành, nhà, cây, núi; ba mức đồ họa, tốc độ AI Nhanh.
+- Mô hình 3D voxel tự dựng bằng code: lính đầu to có hoạt ảnh (đi, đánh, trúng đòn, chết), ngựa, máy công thành, tàu, thành, nhà, cây, núi; ba mức đồ họa, tốc độ AI Nhanh.
 - Lưu cục bộ schema 8; cây công nghệ dạng làn theo nhánh, có lộ trình và chỉ số quân được mở.
 
 Chưa được kiểm chứng bằng người chơi thật: thời lượng ván, độ khó, khả năng nhận dạng quân, điện thoại thật.

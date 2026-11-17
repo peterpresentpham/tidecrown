@@ -1,9 +1,9 @@
-// Dev gallery for src/render/assets/models.bin: every baked model on a grid, anchors in red.
+// Dev gallery for the voxel scenery (src/render/voxelScenery.ts): every model on a grid, arm pivots in red.
 // ?filter=knight limits the grid; ?team=%23eb4646 changes the faction tint.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { loadModels } from '../../src/render/modelLibrary';
+import { voxelScenery } from '../../src/render/voxelScenery';
 
 const params = new URLSearchParams(location.search);
 const filter = params.get('filter') ?? '';
@@ -20,17 +20,13 @@ scene.add(new THREE.HemisphereLight('#fff8de', '#5a7f84', 2.2));
 const sun = new THREE.DirectionalLight('#fff1cd', 2.4);
 sun.position.set(-6, 12, 8);
 scene.add(sun);
-const library = await loadModels();
-if (!library) throw new Error('no models');
+const library = voxelScenery();
 const material = new THREE.MeshStandardMaterial({
   vertexColors: true,
   flatShading: true,
   roughness: 0.85,
 });
-const names = (
-  library as unknown as { entries: Map<string, number[]> }
-).entries.keys() as Iterable<string>;
-const list = [...names].filter((n) => n.includes(filter));
+const list = library.names().filter((n) => n.includes(filter));
 const columns = Math.ceil(Math.sqrt(list.length * 1.6));
 const labels: { el: HTMLSpanElement; p: THREE.Vector3 }[] = [];
 list.forEach((name, i) => {
@@ -45,7 +41,7 @@ list.forEach((name, i) => {
   );
   tile.position.set(x, -0.02, z);
   scene.add(tile);
-  for (const suffix of ['hand', 'hips', 'arm']) {
+  for (const suffix of ['arm']) {
     const a = library.anchor(`${name}.${suffix}`);
     if (a.lengthSq() === 0) continue;
     const dot = new THREE.Mesh(

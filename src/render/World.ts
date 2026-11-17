@@ -25,10 +25,11 @@ import {
   DEFAULT_UI_PREFERENCES,
   type GraphicsQuality,
 } from '../ui/playbackPolicy';
-import { type Character, characterCache, type Pose } from './characters';
-import { loadedModels, loadModels, type ModelLibrary } from './modelLibrary';
+import type { Character, Pose } from './characters';
 import { buildUnitModel } from './unitModels';
 import { FACTION_SYMBOL } from './visualIdentity';
+import { VOXEL_LOOKS, voxelSoldiers } from './voxel';
+import { type VoxelScenery, voxelScenery } from './voxelScenery';
 
 export function worldPoint(tile: { q: number; r: number }, y = 0) {
   return new THREE.Vector3(tile.q * 1.9, y, tile.r * 1.9);
@@ -48,6 +49,9 @@ const pickColor = (t: Tile) =>
 // 30 FPS cap. Two 60 Hz vsync ticks sum to ~33.3 ms with jitter on either side of 1/30 s; without the
 // tolerance about half of the frames slip to a third tick and motion runs near 20 FPS.
 const FRAME_BUDGET = 1 / 30 - 0.004;
+/** Opening zoom: close enough that soldiers read clearly (about 9 × 6 tiles on a wide screen). */
+export const DEFAULT_ZOOM = 1.75;
+const MAX_ZOOM = 2.8;
 
 /** Presentation settings only; none of these change State, fog or rules. */
 export type WorldVisualSettings = {
@@ -56,6 +60,17 @@ export type WorldVisualSettings = {
   reducedMotion?: boolean;
 };
 export type WorldOptions = WorldVisualSettings & { onVisualEnd?: (eventId: number) => void };
+
+/**
+ * Events of `observed` not yet animated, and the new high-water mark. The mark comes from the raw
+ * state: observe() zeroes `serial`, and a zero mark would replay the whole event queue on every sync.
+ */
+export function unseenEvents(raw: State, observed: State, last: number | undefined) {
+  const events = (observed.events ?? (observed.event ? [observed.event] : [])).filter(
+    (e) => e.id > (last ?? 0)
+  );
+  return { events, last: Math.max(last ?? 0, raw.serial) };
+}
 
 export class World {
   private renderedFrames = 0;
@@ -81,10 +96,20 @@ export class World {
   private state: State;
   /** Last raw state passed to sync, so the scene can be rebuilt when models finish loading. */
   private raw: State | null = null;
-  private models: ModelLibrary | null = loadedModels();
-  private characters = characterCache.library;
+  /** Voxel scenery and soldiers are generated in code, so they exist from the first frame. */
+  private models: VoxelScenery | null = voxelScenery();
+  /** Full quality draws the fine soldiers (double resolution, corner shading). */
+  private get characters() {
+    return voxelSoldiers(this.quality === 'normal' ? 'high' : 'basic');
+  }
   private labelLayer: HTMLDivElement;
-  private labels: { el: HTMLButtonElement; pos: THREE.Vector3; follow?: THREE.Group }[] = [];
+  private labels: {
+    el: HTMLButtonElement;
+    pos: THREE.Vector3;
+    follow?: THREE.Group;
+    /** Height above a followed unit. */
+    lift?: number;
+  }[] = [];
   private unitModels = new Map<string, THREE.Group>();
   private materials = new Map<string, THREE.MeshStandardMaterial>();
   private geometries: THREE.BufferGeometry[] = [];
@@ -165,7 +190,7 @@ export class World {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.09;
     this.controls.minZoom = 0.3;
-    this.controls.maxZoom = 1.9;
+    this.controls.maxZoom = MAX_ZOOM;
     this.controls.mouseButtons = {
       LEFT: THREE.MOUSE.PAN,
       MIDDLE: THREE.MOUSE.DOLLY,
@@ -216,35 +241,8 @@ export class World {
     this.renderer.domElement.addEventListener('contextmenu', this.contextMenu);
     window.addEventListener('keydown', this.keyDown);
     this.animate();
-    if (!this.models)
-      void loadModels().then((library) => {
-        if (!library || this.disposed) return;
-        this.models = library;
-        this.rebuildScene();
-      });
-    if (!this.characters)
-      // Loaded lazily: the file list comes from Vite's import.meta.glob (not available in Node tests).
-      void import('./characterAssets')
-        .then((m) => m.loadCharacters())
-        .then((library) => {
-          if (!library || this.disposed) return;
-          this.characters = library;
-          this.rebuildScene();
-        });
   }
-  /** Re-creates every map tile, city and unit (e.g. once the 3D models have loaded). */
-  private rebuildScene() {
-    this.mapSignatures.clear();
-    this.batchSignature = '';
-    for (const g of this.unitModels.values()) {
-      this.troops.remove(g);
-      this.clearGroup(g);
-    }
-    this.unitModels.clear();
-    if (this.raw)
-      this.sync(this.raw, this.selectedUnit, this.selectedTile, this.showGrid, this.actionTiles);
-  }
-  /** A baked library model as a vertex-coloured mesh (geometry owned by this world). */
+  /** A scenery model as a vertex-coloured mesh (geometry owned by this world). */
   private model(name: string, parent: THREE.Object3D, team?: string) {
     const mesh = new THREE.Mesh<THREE.BufferGeometry, THREE.Material>(
       this.geometry(this.models!.geometry(name, team)),
@@ -521,9 +519,6 @@ export class World {
       place(wall, -0.85, 0, 1, Math.PI / 2);
     }
     place(city.level >= 3 ? 'town_3' : city.level === 2 ? 'town_2' : 'town_1', -0.1, -0.15);
-    // Town halls carry no faction material; a banner shows the owner.
-    this.box(g, '#5d4a35', [0.04, 1.3, 0.04], [0.42, 0.65, 0.3]);
-    this.box(g, team!, [0.42, 0.26, 0.03], [0.63, 1.12, 0.3]);
     const extras: string[] = [];
     if (city.job) extras.push('crates');
     if (hasBuilding(city, 'tower')) extras.push('tower');
@@ -835,10 +830,9 @@ export class World {
     }
     this.territories();
     const incoming = new Set(state.units.filter((u) => !u.aboard).map((u) => u.id));
-    const newEvents = (state.events ?? (state.event ? [state.event] : [])).filter(
-      (e) => e.id > (this.lastEvent ?? 0)
-    );
-    this.lastEvent = state.serial;
+    const fresh = unseenEvents(this.raw, state, this.lastEvent);
+    const newEvents = fresh.events;
+    this.lastEvent = fresh.last;
     const ghosts: THREE.Group[] = [];
     for (const [id, g] of this.unitModels)
       if (!incoming.has(id)) {
@@ -890,9 +884,12 @@ export class World {
         this.onSelect(u.tile);
       };
       this.labelLayer.appendChild(label);
+      // Above the tallest headgear (plumes, riders on horseback) so the badge never hides a face.
+      const lift = UNITS[u.type].class === 'cavalry' ? 2.55 : u.type in VOXEL_LOOKS ? 2.1 : 1.85;
       this.labels.push({
         el: label,
-        pos: target.clone().add(new THREE.Vector3(0, 1.85, 0)),
+        pos: target.clone().add(new THREE.Vector3(0, lift, 0)),
+        lift,
         follow: g,
       });
     }
@@ -1260,14 +1257,14 @@ export class World {
     this.controls.update();
   }
   zoom(amount: number) {
-    this.camera.zoom = THREE.MathUtils.clamp(this.camera.zoom * amount, 0.3, 1.9);
+    this.camera.zoom = THREE.MathUtils.clamp(this.camera.zoom * amount, 0.3, MAX_ZOOM);
     this.camera.updateProjectionMatrix();
     this.needsDraw = true;
   }
   resetCamera() {
     this.controls.target.set(0, 0, 0);
     this.camera.position.set(12, 19, 16);
-    this.camera.zoom = 1;
+    this.camera.zoom = DEFAULT_ZOOM;
     const own =
       this.state.units.find((u) => u.owner === 'player')?.tile ??
       this.state.cities.find((c) => c.owner === 'player')?.tile;
@@ -1332,6 +1329,14 @@ export class World {
       this.updateMapFog(this.state);
       this.batchMap();
       this.resize();
+      // Soldiers switch between fine and basic voxel models.
+      for (const g of this.unitModels.values()) {
+        this.troops.remove(g);
+        this.clearGroup(g);
+      }
+      this.unitModels.clear();
+      if (this.raw)
+        this.sync(this.raw, this.selectedUnit, this.selectedTile, this.showGrid, this.actionTiles);
     }
     this.needsDraw = true;
   }
@@ -1413,7 +1418,7 @@ export class World {
     for (const label of this.labels) {
       const v = (
         label.follow
-          ? label.follow.position.clone().add(new THREE.Vector3(0, 1.85, 0))
+          ? label.follow.position.clone().add(new THREE.Vector3(0, label.lift ?? 1.85, 0))
           : label.pos.clone()
       ).project(this.camera);
       label.el.style.transform = `translate(-50%,-50%) translate(${(v.x * 0.5 + 0.5) * w}px,${(-v.y * 0.5 + 0.5) * h}px)`;
